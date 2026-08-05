@@ -1,0 +1,7 @@
+venv/
+.env
+__pycache__/
+*.pyc
+instance/
+app/static/uploads/inspiration/*
+!app/static/uploads/inspiration/.gitkeep
