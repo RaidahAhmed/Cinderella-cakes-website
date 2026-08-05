@@ -13,6 +13,7 @@ const initialFormState = {
   deliveryAddress: '',
 };
 
+// Handles the cake ordering process, capturing customer details and sending them to the backend.
 export default function Order() {
   const [form, setForm] = useState(initialFormState);
   const [inspirationImage, setInspirationImage] = useState(null);

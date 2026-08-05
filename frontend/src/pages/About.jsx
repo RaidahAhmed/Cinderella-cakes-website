@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Placeholder from '../components/Placeholder';
 
+// Displays the company history, mission, vision, and a call-to-action banner.
 export default function About() {
   return (
     <>

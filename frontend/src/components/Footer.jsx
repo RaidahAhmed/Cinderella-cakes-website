@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
+import logoImg from '../assets/images/logo.png';
 
+// The site-wide footer displaying quick links, contact info, and business hours.
 export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-wrap">
         <div className="footer-col footer-brand">
-          <h3>Cinderella cakes</h3>
+          <img src={logoImg} alt="Cinderella Cakes Logo" style={{height: '50px', objectFit: 'contain', marginBottom: '12px'}} />
           <p>Hand crafted cakes for every celebration in Uganda. Made with love and the finest ingredients.</p>
         </div>
 

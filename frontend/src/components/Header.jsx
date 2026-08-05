@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import logoImg from '../assets/images/logo.png';
 
+// The main navigation bar at the top of the website, including a mobile hamburger menu.
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -14,10 +16,7 @@ export default function Header() {
     <header className="site-header">
       <div className="nav-wrap">
         <NavLink to="/" className="logo" onClick={closeMenu}>
-          <span className="logo-mark">🎂</span>
-          <span className="logo-text">
-            Cinderella <em>Cakes</em>
-          </span>
+          <img src={logoImg} alt="Cinderella Cakes Logo" style={{height: '40px', objectFit: 'contain'}} />
         </NavLink>
 
         <button

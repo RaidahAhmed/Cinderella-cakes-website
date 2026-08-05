@@ -10,6 +10,7 @@ const hours = [
   ['Sunday', '9:00am - 3:00pm'],
 ];
 
+// Renders the contact information, business hours, and social media details.
 export default function Contact() {
   return (
     <>

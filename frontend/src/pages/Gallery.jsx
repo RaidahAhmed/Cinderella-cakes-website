@@ -15,6 +15,7 @@ const galleryItems = [
   'White 3-tier wedding cake',
 ];
 
+// Shows a grid of previous cake designs to inspire customers.
 export default function Gallery() {
   return (
     <>

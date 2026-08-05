@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
-import Placeholder from '../components/Placeholder';
+import heroImg from '../assets/images/wedding.png';
+import storefrontImg from '../assets/images/storefront.png';
 
+// Displays the main landing page containing the hero section, value propositions, and bakery location.
 export default function Home() {
   return (
     <>
@@ -23,8 +25,9 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          {/* Replace with your signature cake photo, e.g. the blueberry drip cake from your Figma */}
-          <Placeholder label="Hero cake photo" minHeight="360px" />
+          <div className="hero-image">
+            <img src={heroImg} alt="Cinderella Cakes Signature Wedding Cake" className="hero-img" style={{borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)'}} />
+          </div>
         </div>
       </section>
 
@@ -38,8 +41,7 @@ export default function Home() {
 
           <div className="feature-grid">
             <div className="feature-card">
-              {/* Replace with your delivery-rider illustration or photo */}
-              <Placeholder label="Delivery illustration" />
+              <div className="feature-icon" style={{fontSize: '3rem', padding: '24px 24px 0'}}>🚚</div>
               <div className="feature-card-body">
                 <h3>Reliable deliveries</h3>
                 <p>
@@ -50,8 +52,7 @@ export default function Home() {
             </div>
 
             <div className="feature-card">
-              {/* Replace with a flat-lay photo of baking ingredients */}
-              <Placeholder label="Ingredients photo" />
+              <div className="feature-icon" style={{fontSize: '3rem', padding: '24px 24px 0'}}>🌾</div>
               <div className="feature-card-body">
                 <h3>Fresh Ingredients</h3>
                 <p>We only use the finest fresh local ingredients to make pure wholesome bites.</p>
@@ -64,8 +65,9 @@ export default function Home() {
       <section className="section section-tight">
         <div className="container">
           <div className="visit-grid">
-            {/* Replace with a real photo of the bakery interior */}
-            <Placeholder label="Bakery interior photo" minHeight="340px" />
+            <div className="visit-image">
+              <img src={storefrontImg} alt="Bakery Storefront" style={{borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)'}} />
+            </div>
             <div className="visit-copy">
               <h2>
                 Come visit
