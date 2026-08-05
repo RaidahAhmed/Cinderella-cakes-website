@@ -1,8 +1,9 @@
+import os
 from app import create_app
-# importing the application factory function so we can build the app instance.
 
-app = create_app()  # builds the flask application and returns it.
+env_name = os.environ.get('FLASK_ENV', 'development')
+app = create_app(env_name)
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    # debug mode active therefore the server automatically picks up changes.
+    # In production, you would run this with gunicorn or similar
+    app.run(debug=(env_name == 'development'), host='0.0.0.0')

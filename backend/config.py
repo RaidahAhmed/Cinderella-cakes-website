@@ -1,12 +1,24 @@
-#Contains configuration settings for the Flask application, including database connection details, file upload settings, and email/WhatsApp notification settings.
+import os
+from datetime import timedelta
 
-class Config: # Creates a configuration class that stores various settings for the Flask application.
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:@localhost/cinderella_cakes_db' #where the database is located and how to connect to it. In this case, it's a MySQL database running on localhost with the username root and no password, and the database name is cinderella_cakes_db.
-    SQLALCHEMY_TRACK_MODIFICATIONS = False #This feature is turned off to save system resources, as it is not needed for this application.
-
-    # Where uploaded inspiration photos are saved on disk.
+class Config:
+    # Basic Config
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
+    
+    # Database
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # JWT Auth
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key-change-in-prod')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    
+    # Uploads
     UPLOAD_FOLDER = 'app/static/uploads/inspiration'
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB
+    
+    # CORS
+    CORS_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
 
     # --- Email notification settings ---
     MAIL_ENABLED = False
@@ -19,7 +31,24 @@ class Config: # Creates a configuration class that stores various settings for t
 
     # --- WhatsApp ---
     BAKERY_WHATSAPP_NUMBER = '256781470984'
-
-    # Base URL of the running Flask server - used to build full URLs for
-    # uploaded images so they can be included as clickable links in WhatsApp messages.
     SERVER_BASE_URL = 'http://localhost:5000'
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+    # Default to MySQL, fallback to SQLite if needed
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or 'mysql+pymysql://root:@localhost/cinderella_cakes_db'
+
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+
+class ProductionConfig(Config):
+    DEBUG = False
+    # In production, must provide a real database URL via env
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'mysql+pymysql://root:@localhost/cinderella_cakes_db'
+
+config_by_name = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig
+}

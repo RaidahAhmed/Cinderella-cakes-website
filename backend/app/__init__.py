@@ -1,35 +1,52 @@
-# __init__.py enables us to initialize and work with the different imported modules under the app folder eg: Flask-SQLAlchemy, Flask-Migrate.
+import os
+from flask import Flask, jsonify
+from config import config_by_name
 
-from flask import Flask
-from app.extensions import db, migrate, cors
-from app.controllers.orders.orders_controller import orders
-from app.controllers.auth.auth_controller import auth
-from app.controllers.gallery.gallery_controller import gallery
+# Import extensions
+from app.extensions import db, migrate, cors, jwt, bcrypt
 
-# application factory function
-# helps us work with different 3rd party libraries and blueprints.
+# Import all models to ensure they are registered with SQLAlchemy
+from app import models
 
-def create_app():
+# Import blueprint list
+from app.controllers import all_blueprints
 
-    app = Flask(__name__)  # stores the flask application
-    app.config.from_object('config.Config')
+def create_app(env_name="development"):
+    # Create the Flask application instance
+    app = Flask(__name__)
+    
+    # Load configuration
+    app.config.from_object(config_by_name[env_name])
 
-    db.init_app(app) # initializes the SQLAlchemy extension with the Flask application instance, allowing us to interact with the database using Python objects instead of writing raw SQL queries.
-    migrate.init_app(app, db) #Shows the migration extension theFlask application it will be working with and the database instance it will be managing. This allows us to generate and run database migrations.
+    # Initialize extensions with the app
+    db.init_app(app)
+    migrate.init_app(app, db)
+    
+    # Apply CORS only to specified origins from config
+    cors.init_app(app, resources={r"/api/*": {"origins": app.config.get('CORS_ORIGINS', '*')}})
+    
+    jwt.init_app(app)
+    bcrypt.init_app(app)
 
-    # Application will allow requests from React using CORS rules. This is important because the React dev server runs on a different port than the Flask API, and without CORS, the browser would block requests from the React app to the Flask API due to the same-origin policy.
-    cors.init_app(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})
+    # Register all blueprints
+    for bp in all_blueprints:
+        app.register_blueprint(bp)
 
-    # importing and registering models which tells SQLAlchemy about the models we have defined in our application. This is necessary for SQLAlchemy to create the corresponding tables in the database and manage the relationships between them.
-    from app.models import Order, GalleryItem, AdminUser
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return jsonify({'error': 'Not found'}), 404
 
-    # registering the blueprints to make the routes available to the application.
-    app.register_blueprint(orders)
-    app.register_blueprint(auth)
-    app.register_blueprint(gallery)
+    @app.errorhandler(500)
+    def internal_error(error):
+        db.session.rollback()
+        return jsonify({'error': 'Internal server error'}), 500
+        
+    # JWT error handlers are provided by flask-jwt-extended automatically,
+    # but we can customize them if needed here
 
-    @app.route("/")  # decorator - modifies another function
-    def home():
-        return "Cinderella Cakes API is running"
+    # Create upload directory if it doesn't exist
+    upload_path = os.path.join(app.root_path, 'static', 'uploads', 'inspiration')
+    os.makedirs(upload_path, exist_ok=True)
 
     return app

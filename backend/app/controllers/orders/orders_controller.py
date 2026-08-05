@@ -13,6 +13,7 @@ from app.status_codes import (
     HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR,
 )
+from app.utils.decorators import permission_required
 
 # orders blueprint which holds all the routes related to orders.
 orders = Blueprint('orders', __name__, url_prefix='/api/v1/orders')
@@ -145,6 +146,7 @@ def create_order():
 
 # getting all orders - this route retrieves all orders from the database and returns them in a JSON response.
 @orders.route('', methods=['GET'])
+@permission_required('orders_read')
 def get_all_orders():
     try:
         all_orders = Order.query.order_by(Order.created_at.desc()).all()
@@ -159,6 +161,7 @@ def get_all_orders():
 
 # get a single order by id - this route retrieves a specific order based on the provided order ID. If the order is found, it returns the order details; otherwise, it returns a 404 error.
 @orders.route('/<int:order_id>', methods=['GET'])
+@permission_required('orders_read')
 def get_order_by_id(order_id):
     try:
         order = Order.query.filter_by(id=order_id).first()
@@ -166,6 +169,24 @@ def get_order_by_id(order_id):
         if not order:
             return jsonify({"success": False, "message": "Order not found"}), HTTP_404_NOT_FOUND
 
+        return jsonify({"success": True, "order": order.to_dict()}), HTTP_200_OK
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
+
+# update_order_status - changes the progress status of a specific order (e.g., pending -> completed). Requires 'orders_write' permission.
+@orders.route('/<int:order_id>/status', methods=['PATCH'])
+@permission_required('orders_write')
+def update_order_status(order_id):
+    try:
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({"success": False, "message": "Order not found"}), HTTP_404_NOT_FOUND
+            
+        data = request.json
+        if 'status' in data:
+            order.status = data['status']
+            db.session.commit()
+            
         return jsonify({"success": True, "order": order.to_dict()}), HTTP_200_OK
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR

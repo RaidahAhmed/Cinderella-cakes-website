@@ -5,19 +5,22 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models.gallery import GalleryItem
-from app.utils.auth import token_required
+from app.utils.decorators import permission_required
 from app.status_codes import (
     HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
+# Group for all gallery-related endpoints.
 gallery = Blueprint('gallery', __name__, url_prefix='/api/v1/gallery')
 
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
+# Checks if the uploaded file has a permitted image extension.
 def _allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[-1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
+# Retrieves all items in the gallery, sorted by newest first.
 @gallery.route('', methods=['GET'])
 def get_all_gallery_items():
     try:
@@ -30,9 +33,10 @@ def get_all_gallery_items():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
 
+# Uploads and saves a new image to the gallery. Requires content write permission.
 @gallery.route('/create', methods=['POST'])
-@token_required
-def create_gallery_item(current_user):
+@permission_required('content_write')
+def create_gallery_item():
     try:
         title = request.form.get('title')
         description = request.form.get('description')
@@ -77,9 +81,10 @@ def create_gallery_item(current_user):
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
 
+# Removes a specific item from the gallery and database.
 @gallery.route('/<int:item_id>', methods=['DELETE'])
-@token_required
-def delete_gallery_item(current_user, item_id):
+@permission_required('content_write')
+def delete_gallery_item(item_id):
     try:
         item = GalleryItem.query.get(item_id)
         if not item:
