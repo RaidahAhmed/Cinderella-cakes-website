@@ -1,4 +1,9 @@
 import { Link } from 'react-router-dom';
+import mapsIcon from '../assets/icons/maps (1).png';
+import emailIcon from '../assets/icons/gmail.png';
+import phoneIcon from '../assets/icons/phone-call.png';
+import fbIcon from '../assets/icons/facebook.png';
+import instaIcon from '../assets/icons/instagram.png';
 
 const hours = [
   ['Monday', '8:00am - 7:00pm'],
@@ -24,30 +29,37 @@ export default function Contact() {
         <div className="container">
           <div className="contact-methods">
             <div className="contact-method">
-              <span className="icon">📍</span>
+              <img src={mapsIcon} alt="Address" className="contact-icon" />
               <div>
                 <h4>Ave Maria Rd, Nsambya</h4>
                 <p>Available Mon &ndash; Sun</p>
               </div>
             </div>
             <div className="contact-method">
-              <span className="icon">✉️</span>
+              <img src={emailIcon} alt="Email" className="contact-icon" />
               <div>
                 <h4>cinderellacakes@gmail.com</h4>
                 <p>Replies within 24 hours</p>
               </div>
             </div>
             <div className="contact-method">
-              <span className="icon">📞</span>
+              <img src={phoneIcon} alt="Phone" className="contact-icon" />
               <div>
-                <h4>+256 781 470984</h4>
+                <h4>+256781 470984</h4>
                 <p>Available Mon &ndash; Sun</p>
               </div>
             </div>
             <div className="contact-method">
-              <span className="icon">📘</span>
+              <img src={fbIcon} alt="Facebook" className="contact-icon" />
               <div>
-                <h4>Cinderella Cakes UG</h4>
+                <h4>Cinderella cakes UG</h4>
+                <p>Follow us for daily inspiration</p>
+              </div>
+            </div>
+            <div className="contact-method">
+              <img src={instaIcon} alt="Instagram" className="contact-icon" />
+              <div>
+                <h4>Cinderella Cakes</h4>
                 <p>Follow us for daily inspiration</p>
               </div>
             </div>

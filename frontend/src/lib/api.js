@@ -79,7 +79,8 @@ export async function submitOrder(orderData) {
     method: 'POST',
     body: formData,
   });
-  return res.json();
+  const data = await res.json();
+  return { ok: res.ok, data };
 }
 
 // Retrieves all orders for the admin dashboard. Requires the user to be logged in.
@@ -121,6 +122,29 @@ export async function getMe() {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Not authenticated');
+  return res.json();
+}
+
+// ========================
+// ADMIN API (SETTINGS)
+// ========================
+
+// Retrieves site settings for admin editing. Requires login.
+export async function fetchAdminSettings() {
+  const res = await fetch(`${API_BASE_URL}/settings/`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch settings');
+  return res.json();
+}
+
+// Updates site settings. Requires login.
+export async function updateAdminSettings(settingsData) {
+  const res = await fetch(`${API_BASE_URL}/settings/`, {
+    method: 'PUT',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(settingsData),
+  });
   return res.json();
 }
 

@@ -1,19 +1,15 @@
 import { Link } from 'react-router-dom';
-import Placeholder from '../components/Placeholder';
 
-// Labelled to match what was in your Figma gallery grid - swap each
-// Placeholder for an <img src="..." /> of the matching real photo.
-const galleryItems = [
-  'Panda-themed birthday cake',
-  'Spider-Man birthday cake',
-  'Cinderella dress cake',
-  'Chocolate drip cake with Ferrero Rocher',
-  'Chocolate swirl drip cake',
-  'White cake with chocolate shards',
-  'Pink floral cake',
-  'Black glitter "Twenty One" cake',
-  'White 3-tier wedding cake',
-];
+const mediaFiles = import.meta.glob('../assets/gallery/*.{png,jpg,jpeg,webp,mp4}', { eager: true });
+
+const galleryItems = Object.keys(mediaFiles).map((key) => {
+  const isVideo = key.endsWith('.mp4');
+  return {
+    src: mediaFiles[key].default,
+    isVideo,
+    alt: 'Cake design',
+  };
+});
 
 // Shows a grid of previous cake designs to inspire customers.
 export default function Gallery() {
@@ -28,8 +24,18 @@ export default function Gallery() {
       <section className="section">
         <div className="container">
           <div className="gallery-grid">
-            {galleryItems.map((label) => (
-              <Placeholder key={label} label={label} />
+            {galleryItems.map((item, index) => (
+              item.isVideo ? (
+                <video 
+                  key={index} 
+                  src={item.src} 
+                  controls 
+                  preload="metadata" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <img key={index} src={item.src} alt={item.alt} loading="lazy" />
+              )
             ))}
           </div>
 

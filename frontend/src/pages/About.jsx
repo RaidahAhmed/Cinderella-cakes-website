@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import Placeholder from '../components/Placeholder';
+import cupcakeImg from '../assets/c-cakes-images/about-pg-vanilla-buttercream.png';
+import slicedCakeImg from '../assets/c-cakes-images/Deliciously Moist Vanilla Cake Recipe Perfect for Every Occasion and Sweet Cravings 1.png';
 
 // Displays the company history, mission, vision, and a call-to-action banner.
 export default function About() {
@@ -17,7 +18,7 @@ export default function About() {
               Baked with love since <span className="year">2015</span>
             </h2>
             <p>
-              Founded in 2015, Cinderella Cakes is a bakery dedicated to creating delicious,
+              Founded in <span className="year">2015</span>, Cinderella Cakes is a bakery dedicated to creating delicious,
               beautifully crafted cakes for every occasion. From birthdays and weddings to
               anniversaries, graduations and corporate events, we take pride in designing cakes
               that are as memorable as the moments they celebrate.
@@ -45,10 +46,8 @@ export default function About() {
           </div>
 
           <div className="about-images">
-            {/* Replace with a cupcake close-up photo */}
-            <Placeholder label="Cupcake photo" minHeight="230px" />
-            {/* Replace with a sliced layer-cake photo */}
-            <Placeholder label="Sliced cake photo" minHeight="230px" />
+            <img src={cupcakeImg} alt="Vanilla buttercream cupcake being decorated" />
+            <img src={slicedCakeImg} alt="Sliced vanilla layer cake" />
           </div>
         </div>
       </section>

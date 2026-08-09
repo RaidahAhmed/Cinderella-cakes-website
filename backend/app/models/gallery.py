@@ -25,7 +25,7 @@ class GalleryItem(db.Model):
             "id": self.id,
             "title": self.title,
             "description": self.description,
-            "image_url": self.image_url,
+            "image_url": f"/static/uploads/inspiration/{self.image_url}" if self.image_url else None,
             "category": self.category,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

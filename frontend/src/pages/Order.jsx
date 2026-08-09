@@ -19,7 +19,7 @@ export default function Order() {
   const [inspirationImage, setInspirationImage] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState(null); // { type: 'success' | 'error', message, whatsappLink }
+  const [status, setStatus] = useState(null);
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -47,8 +47,6 @@ export default function Order() {
           whatsappLink: data.whatsapp_link,
         });
 
-        // Try to open WhatsApp right away; if a popup blocker stops it,
-        // the fallback button rendered below still lets the customer send it.
         if (data.whatsapp_link) {
           window.open(data.whatsapp_link, '_blank');
         }
@@ -60,7 +58,7 @@ export default function Order() {
       setStatus({
         type: 'error',
         message:
-          "Something went wrong reaching the server. Make sure XAMPP's Apache and MySQL are running, and that the API_BASE_URL in src/lib/api.js matches your setup.",
+          "Something went wrong reaching the server. Make sure your API is running.",
       });
     } finally {
       setSubmitting(false);
@@ -89,7 +87,7 @@ export default function Order() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-gradient"
-                    style={{ marginTop: 16, display: 'flex', justifyContent: 'center', fontSize: '1.1rem', padding: '12px 24px' }}
+                    style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}
                   >
                     📱 Send Order via WhatsApp
                   </a>
@@ -164,15 +162,15 @@ export default function Order() {
               <Field label="Cake size" id="cakeSize" error={errors.cake_size}>
                 <input
                   type="text"
-                  placeholder='e.g. Medium (serves 20)'
+                  placeholder="e.g. Medium (serves 20)"
                   value={form.cakeSize}
                   onChange={(e) => updateField('cakeSize', e.target.value)}
                 />
               </Field>
 
               <Field label="Delivery type" id="deliveryType" error={null}>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', height: '100%' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'normal', color: 'var(--text)' }}>
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', height: '100%', padding: '12px 14px', border: '1.5px solid #D9C4E8', borderRadius: 'var(--radius-sm)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontStyle: 'normal', color: 'var(--ink)' }}>
                     <input
                       type="radio"
                       name="deliveryType"
@@ -182,7 +180,7 @@ export default function Order() {
                     />
                     Pickup
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'normal', color: 'var(--text)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontStyle: 'normal', color: 'var(--ink)' }}>
                     <input
                       type="radio"
                       name="deliveryType"
@@ -199,7 +197,7 @@ export default function Order() {
                 <Field label="Delivery address" id="deliveryAddress" error={errors.delivery_address}>
                   <input
                     type="text"
-                    placeholder='e.g. Nsambya, Ave Maria Rd'
+                    placeholder="e.g. Nsambya, Ave Maria Rd"
                     value={form.deliveryAddress}
                     onChange={(e) => updateField('deliveryAddress', e.target.value)}
                   />

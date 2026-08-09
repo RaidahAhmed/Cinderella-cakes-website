@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom';
-import heroImg from '../assets/images/wedding.png';
-import storefrontImg from '../assets/images/storefront.png';
+import heroImg from '../assets/c-cakes-images/home-pg-hero.png';
+import storefrontImg from '../assets/c-cakes-images/visit-bakery.png';
+import deliveryImg from '../assets/c-cakes-images/delivery.png';
+import ingredientsImg from '../assets/c-cakes-images/fresh-ingridients.png';
+import mapsIcon from '../assets/icons/maps (1).png';
+import phoneIcon from '../assets/icons/phone-call.png';
 
 // Displays the main landing page containing the hero section, value propositions, and bakery location.
 export default function Home() {
   return (
     <>
-      <section className="hero">
+      <section className="hero" style={{ backgroundImage: `url(${heroImg})` }}>
         <div className="hero-wrap">
           <div className="hero-copy">
             <h1>
@@ -25,9 +29,6 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          <div className="hero-image">
-            <img src={heroImg} alt="Cinderella Cakes Signature Wedding Cake" className="hero-img" style={{borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)'}} />
-          </div>
         </div>
       </section>
 
@@ -41,7 +42,9 @@ export default function Home() {
 
           <div className="feature-grid">
             <div className="feature-card">
-              <div className="feature-icon" style={{fontSize: '3rem', padding: '24px 24px 0'}}>🚚</div>
+              <div className="feature-image">
+                <img src={deliveryImg} alt="Reliable deliveries" />
+              </div>
               <div className="feature-card-body">
                 <h3>Reliable deliveries</h3>
                 <p>
@@ -52,7 +55,9 @@ export default function Home() {
             </div>
 
             <div className="feature-card">
-              <div className="feature-icon" style={{fontSize: '3rem', padding: '24px 24px 0'}}>🌾</div>
+              <div className="feature-image">
+                <img src={ingredientsImg} alt="Fresh Ingredients" />
+              </div>
               <div className="feature-card-body">
                 <h3>Fresh Ingredients</h3>
                 <p>We only use the finest fresh local ingredients to make pure wholesome bites.</p>
@@ -66,7 +71,7 @@ export default function Home() {
         <div className="container">
           <div className="visit-grid">
             <div className="visit-image">
-              <img src={storefrontImg} alt="Bakery Storefront" style={{borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)'}} />
+              <img src={storefrontImg} alt="Cinderella Cakes Bakery Storefront" />
             </div>
             <div className="visit-copy">
               <h2>
@@ -78,10 +83,12 @@ export default function Home() {
                 passionate bakers here.
               </p>
               <div className="visit-detail">
-                <span className="icon">📍</span> Ave Maria Rd, Nsambya
+                <img src={mapsIcon} alt="Location" className="visit-icon" />
+                Ave Maria Rd, Nsambya
               </div>
               <div className="visit-detail">
-                <span className="icon">📞</span> +256 781 470984
+                <img src={phoneIcon} alt="Phone" className="visit-icon" />
+                +256781 470984
               </div>
               <Link to="/contact" className="btn btn-gradient">
                 Get Directions
