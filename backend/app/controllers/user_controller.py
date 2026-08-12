@@ -17,7 +17,9 @@ def get_users():
 @user_bp.route('/', methods=['POST'])
 @role_required('super_admin')
 def create_user():
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'message': 'Email already exists'}), 400
@@ -43,7 +45,9 @@ def create_user():
 @role_required('super_admin')
 def update_user(id):
     user = User.query.get_or_404(id)
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     
     if 'email' in data and data['email'] != user.email:
         if User.query.filter_by(email=data['email']).first():

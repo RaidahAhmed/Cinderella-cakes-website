@@ -10,7 +10,9 @@ footer_bp = Blueprint('footer_admin', __name__, url_prefix='/api/footer_admin')
 @footer_bp.route('/columns', methods=['POST'])
 @permission_required('content_write')
 def create_column():
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     column = FooterColumn(
         title=data['title'],
         order=data.get('order', 0)
@@ -24,7 +26,9 @@ def create_column():
 @permission_required('content_write')
 def update_column(id):
     column = FooterColumn.query.get_or_404(id)
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     if 'title' in data: column.title = data['title']
     if 'order' in data: column.order = data['order']
     db.session.commit()
@@ -43,7 +47,9 @@ def delete_column(id):
 @footer_bp.route('/links', methods=['POST'])
 @permission_required('content_write')
 def create_link():
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     link = FooterLink(
         column_id=data['column_id'],
         label=data['label'],
@@ -60,7 +66,9 @@ def create_link():
 @permission_required('content_write')
 def update_link(id):
     link = FooterLink.query.get_or_404(id)
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     for key in ['label', 'url', 'order', 'is_external']:
         if key in data:
             setattr(link, key, data[key])

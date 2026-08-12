@@ -10,7 +10,9 @@ content_bp = Blueprint('content', __name__, url_prefix='/api/content')
 @content_bp.route('/sections', methods=['POST'])
 @permission_required('content_write')
 def create_section():
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     section = ContentSection(
         page_id=data['page_id'],
         section_type=data['section_type'],
@@ -28,7 +30,9 @@ def create_section():
 @permission_required('content_write')
 def update_section(id):
     section = ContentSection.query.get_or_404(id)
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     for key in ['section_type', 'order', 'eyebrow', 'heading', 'subheading']:
         if key in data:
             setattr(section, key, data[key])
@@ -48,7 +52,9 @@ def delete_section(id):
 @content_bp.route('/blocks', methods=['POST'])
 @permission_required('content_write')
 def create_block():
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     block = ContentBlock(
         section_id=data['section_id'],
         order=data.get('order', 0),
@@ -67,7 +73,9 @@ def create_block():
 @permission_required('content_write')
 def update_block(id):
     block = ContentBlock.query.get_or_404(id)
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     for key in ['order', 'title', 'text', 'icon_or_image_url', 'link_url', 'link_text']:
         if key in data:
             setattr(block, key, data[key])
