@@ -48,7 +48,7 @@ export default function Order() {
         });
 
         if (data.whatsapp_link) {
-          window.open(data.whatsapp_link, '_blank');
+          window.open(data.whatsapp_link, '_blank', 'noopener,noreferrer');
         }
       } else {
         setErrors(data.errors || {});
