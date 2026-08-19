@@ -31,7 +31,6 @@ export default function Gallery() {
                   src={item.src} 
                   controls 
                   preload="metadata" 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
                 <img key={index} src={item.src} alt={item.alt} loading="lazy" />

@@ -169,8 +169,8 @@ export default function Order() {
               </Field>
 
               <Field label="Delivery type" id="deliveryType" error={null}>
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'center', height: '100%', padding: '12px 14px', border: '1.5px solid #D9C4E8', borderRadius: 'var(--radius-sm)' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontStyle: 'normal', color: 'var(--ink)' }}>
+                <div className="radio-group-wrap">
+                  <label>
                     <input
                       type="radio"
                       name="deliveryType"
@@ -180,7 +180,7 @@ export default function Order() {
                     />
                     Pickup
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontStyle: 'normal', color: 'var(--ink)' }}>
+                  <label>
                     <input
                       type="radio"
                       name="deliveryType"
