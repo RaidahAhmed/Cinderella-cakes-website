@@ -1,6 +1,6 @@
-export const API_BASE_URL = 'http://localhost:5000/api/v1';
-export const API_PUBLIC_URL = 'http://localhost:5000/api/public';
-export const BASE_URL = 'http://localhost:5000';
+export const API_BASE_URL = 'https://cinderella-cakes-website.onrender.com/api/v1';
+export const API_PUBLIC_URL = 'https://cinderella-cakes-website.onrender.com/api/public';
+export const BASE_URL = 'https://cinderella-cakes-website.onrender.com';
 
 // Retrieves the saved login token to securely identify the user for protected actions.
 function getAuthHeaders() {
