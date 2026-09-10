@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: cinderella-cakes-api
+    name: Cinderella-cakes-website
     runtime: python
     plan: free
     buildCommand: pip install -r backend/requirements.txt
@@ -18,6 +18,6 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: CORS_ORIGINS
-        value: "https://cinderellacakesug.com,https://www.cinderellacakesug.com"
+        value: "https://cinderella-cakes-website.onrender.com,https://cinderellacakesug.com,https://www.cinderellacakesug.com"
       - key: SERVER_BASE_URL
-        value: "https://cinderella-cakes-api.onrender.com"
+        value: "https://cinderella-cakes-website.onrender.com"
