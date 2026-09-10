@@ -25,7 +25,7 @@ export default function Dashboard() {
         <h1>Dashboard</h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div className="admin-stats-grid">
         <div className="admin-card">
           <h3 style={{ margin: '0 0 8px 0', color: 'var(--ink-soft)' }}>Total Orders</h3>
           <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--purple-dark)' }}>{stats.total}</div>
@@ -39,28 +39,30 @@ export default function Dashboard() {
 
       <div className="admin-card">
         <h3>Recent Orders</h3>
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Customer</th>
-              <th>Event Date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.slice(0, 5).map(order => (
-              <tr key={order.id}>
-                <td>#{order.id}</td>
-                <td>{order.full_name}</td>
-                <td>{new Date(order.event_date).toLocaleDateString()}</td>
-                <td>
-                  <span className={`status-badge status-${order.status}`}>{order.status}</span>
-                </td>
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Event Date</th>
+                <th>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orders.slice(0, 5).map(order => (
+                <tr key={order.id}>
+                  <td>#{order.id}</td>
+                  <td>{order.full_name}</td>
+                  <td>{new Date(order.event_date).toLocaleDateString()}</td>
+                  <td>
+                    <span className={`status-badge status-${order.status}`}>{order.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
