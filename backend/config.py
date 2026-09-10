@@ -18,7 +18,7 @@ class Config:
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB
     
     # CORS
-    CORS_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
+    CORS_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,https://cinderellacakesug.com,https://www.cinderellacakesug.com').split(',') if origin.strip()]
 
     # --- Email notification settings ---
     MAIL_ENABLED = False
@@ -31,7 +31,7 @@ class Config:
 
     # --- WhatsApp ---
     BAKERY_WHATSAPP_NUMBER = '256781470984'
-    SERVER_BASE_URL = 'http://localhost:5000'
+    SERVER_BASE_URL = os.environ.get('SERVER_BASE_URL', 'http://localhost:5000')
 
 class DevelopmentConfig(Config):
     DEBUG = True

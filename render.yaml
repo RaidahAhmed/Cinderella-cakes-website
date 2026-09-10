@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: cinderella-cakes-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    healthCheckPath: /api/v1/auth/me
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: FLASK_ENV
+        value: "production"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        value: "https://cinderellacakesug.com,https://www.cinderellacakesug.com"
+      - key: SERVER_BASE_URL
+        value: "https://cinderella-cakes-api.onrender.com"
