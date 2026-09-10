@@ -3,10 +3,9 @@ services:
     name: cinderella-cakes-api
     runtime: python
     plan: free
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn run:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
-    healthCheckPath: /api/v1/auth/me
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn run:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.8"
