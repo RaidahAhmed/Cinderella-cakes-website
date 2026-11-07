@@ -1,3 +1,5 @@
+#Seed script to populate the database with initial data for the Cinderella Cakes website. 
+#This includes creating roles, permissions, a super admin user, site settings, navigation items, pages, content sections, and footer links.
 import os
 from app import create_app
 from app.extensions import db
@@ -12,15 +14,18 @@ from app.models.gallery import GalleryItem
 
 app = create_app(os.environ.get('FLASK_ENV', 'development'))
 
+#This function seeds the database with all initial data for roles, permissions, users e.t.c
 def seed():
-    with app.app_context():
+    with app.app_context(): #adds the application context to allow database operations
         # 1. Create permissions
         perms = [
             'content_read', 'content_write',
             'orders_read', 'orders_write',
             'gallery_read', 'gallery_write'
         ]
-        
+
+        #This loop checks if each permission already exists in the database. 
+        #If not, it creates a new Permission object and adds it to the session.
         permission_objs = []
         for p_name in perms:
             perm = Permission.query.filter_by(name=p_name).first()
@@ -32,6 +37,8 @@ def seed():
         db.session.commit()
 
         # 2. Create roles
+        #This section checks for the existence of 'super_admin' and 'admin' roles.
+        #If they don't exist, it creates them and assigns the appropriate permissions.
         super_admin_role = Role.query.filter_by(name='super_admin').first()
         if not super_admin_role:
             super_admin_role = Role(name='super_admin', description='Full access to everything')
@@ -46,10 +53,18 @@ def seed():
         db.session.commit()
 
         # 3. Create super admin user
-        admin_user = User.query.filter_by(email='admin@cinderellacakes.com').first()
+        #This creates a super admin user with a default email and password.
+        # Migrate existing admin to new email if needed
+        old_admin = User.query.filter_by(email='admin@cinderellacakes.com').first()
+        if old_admin:
+            old_admin.email = 'cinderellacakes2@gmail.com'
+            db.session.commit()
+            print("Migrated admin email to cinderellacakes2@gmail.com")
+
+        admin_user = User.query.filter_by(email='cinderellacakes2@gmail.com').first()
         if not admin_user:
             admin_user = User(
-                email='admin@cinderellacakes.com',
+                email='cinderellacakes2@gmail.com',
                 first_name='Admin',
                 last_name='User',
                 role=super_admin_role
@@ -57,9 +72,11 @@ def seed():
             admin_user.set_password('admin123')
             db.session.add(admin_user)
             db.session.commit()
-            print("Created super admin: admin@cinderellacakes.com / admin123")
+            print("Created super admin: cinderellacakes2@gmail.com / admin123")
 
         # 4. Site Settings
+        #This checks if site settings like site name, contact information, etc. exist. 
+        #If not, it creates default settings for the website.
         if not SiteSettings.query.first():
             settings = SiteSettings(
                 site_name="Cinderella Cakes",
@@ -73,6 +90,8 @@ def seed():
             db.session.commit()
 
         # 5. Navigation
+        #This checks if there are any existing navigation menu items.
+        #If none exist, it creates a default set of menu items for the website's main navigation bar.
         if MenuItem.query.count() == 0:
             nav_items = [
                 MenuItem(label="Home", url="/", order=1),

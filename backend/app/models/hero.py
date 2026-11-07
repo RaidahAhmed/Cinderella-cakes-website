@@ -6,9 +6,9 @@ class HeroSection(db.Model):
     page_id = db.Column(db.Integer, db.ForeignKey('pages.id'), nullable=False)
     
     # Hero content
-    eyebrow = db.Column(db.String(100)) # e.g. "Bespoke Bakery"
+    eyebrow = db.Column(db.String(100)) #This is a small text above the main heading.
     heading = db.Column(db.String(255), nullable=False)
-    heading_accent = db.Column(db.String(100)) # e.g. "Dreams" to highlight in teal
+    heading_accent = db.Column(db.String(100)) # This is a part of the heading that can be styled differently.
     subheading = db.Column(db.Text)
     
     # Images (assuming URLs to Media or static strings)
@@ -17,11 +17,11 @@ class HeroSection(db.Model):
     
     # Action buttons
     primary_button_text = db.Column(db.String(50))
-    primary_button_url = db.Column(db.String(255))
+    primary_button_url = db.Column(db.String(255)) #This is the URL that The button will link to when clicked.
     secondary_button_text = db.Column(db.String(50))
-    secondary_button_url = db.Column(db.String(255))
+    secondary_button_url = db.Column(db.String(255)) #This is the URL that The button will link to when clicked.
     
-    def to_dict(self):
+    def to_dict(self): #This method converts the HeroSection object into a dictionary format, which is useful for JSON responses in APIs.
         return {
             'id': self.id,
             'page_id': self.page_id,

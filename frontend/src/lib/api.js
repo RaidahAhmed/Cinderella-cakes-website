@@ -170,3 +170,67 @@ export async function deleteGalleryItem(id) {
   });
   return res.json();
 }
+
+// ========================
+// ADMIN API (PASSWORD)
+// ========================
+
+// Changes the logged-in user's password.
+export async function changePassword(currentPassword, newPassword) {
+  const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  return res.json();
+}
+
+// ========================
+// ADMIN API (CONTENT EDITING)
+// ========================
+
+// Fetches all pages for admin content management.
+export async function fetchPages() {
+  const res = await fetch('http://localhost:5000/api/pages/', {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch pages');
+  return res.json();
+}
+
+// Updates a content section's text fields.
+export async function updateContentSection(id, data) {
+  const res = await fetch(`http://localhost:5000/api/content/sections/${id}`, {
+    method: 'PUT',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+// Updates a content block's text fields.
+export async function updateContentBlock(id, data) {
+  const res = await fetch(`http://localhost:5000/api/content/blocks/${id}`, {
+    method: 'PUT',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+// Updates a hero section's text fields.
+export async function updateHeroSection(id, data) {
+  const res = await fetch(`http://localhost:5000/api/heroes/${id}`, {
+    method: 'PUT',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+// Fetches full page data with content for a given slug.
+export async function fetchPageBySlug(slug) {
+  const res = await fetch(`${API_PUBLIC_URL}/pages/${slug}`);
+  if (!res.ok) return null;
+  return res.json();
+}

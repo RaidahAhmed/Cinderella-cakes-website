@@ -2,12 +2,13 @@ import { Link } from 'react-router-dom';
 
 const mediaFiles = import.meta.glob('../assets/gallery/*.{png,jpg,jpeg,webp,mp4}', { eager: true });
 
-const galleryItems = Object.keys(mediaFiles).map((key) => {
+const galleryItems = Object.keys(mediaFiles).map((key, index) => {
   const isVideo = key.endsWith('.mp4');
   return {
     src: mediaFiles[key].default,
     isVideo,
     alt: 'Cake design',
+    id: index + 1,
   };
 });
 
@@ -24,18 +25,27 @@ export default function Gallery() {
       <section className="section">
         <div className="container">
           <div className="gallery-grid">
-            {galleryItems.map((item, index) => (
-              item.isVideo ? (
-                <video 
-                  key={index} 
-                  src={item.src} 
-                  controls 
-                  preload="metadata" 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <img key={index} src={item.src} alt={item.alt} loading="lazy" />
-              )
+            {galleryItems.map((item) => (
+              <div key={item.id} className="gallery-item">
+                {item.isVideo ? (
+                  <video
+                    src={item.src}
+                    controls
+                    preload="metadata"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <img src={item.src} alt={item.alt} loading="lazy" />
+                )}
+                <div className="gallery-item-overlay">
+                  <Link
+                    to={`/order?gallery_ref=${item.id}`}
+                    className="btn btn-gradient gallery-order-btn"
+                  >
+                    Order This Cake
+                  </Link>
+                </div>
+              </div>
             ))}
           </div>
 

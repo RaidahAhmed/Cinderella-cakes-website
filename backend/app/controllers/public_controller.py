@@ -8,7 +8,7 @@ from app.models.gallery import GalleryItem
 # Provides read-only access to published content for regular website visitors.
 public_bp = Blueprint('public', __name__, url_prefix='/api/public')
 
-# Retrieves a specific page by its URL slug if it is published.
+# Retrieves a specific page by its URL slug if it is published. The slug is a unique identifier for the page, often derived from its title.
 @public_bp.route('/pages/<slug>', methods=['GET'])
 def get_page(slug):
     page = Page.query.filter_by(slug=slug, is_published=True).first()
@@ -16,7 +16,7 @@ def get_page(slug):
         return jsonify({'message': 'Page not found'}), 404
     return jsonify(page.to_dict())
 
-# Returns all active links for the main navigation menu.
+# Returns all active links for the main navigation menu e.g., Home, About, Contact, etc.
 @public_bp.route('/navigation', methods=['GET'])
 def get_navigation():
     items = MenuItem.query.filter_by(is_active=True).order_by(MenuItem.order).all()
@@ -28,7 +28,7 @@ def get_footer():
     columns = FooterColumn.query.order_by(FooterColumn.order).all()
     return jsonify([col.to_dict() for col in columns])
 
-# Fetches global site settings like the store name and contact details.
+# Fetches global site settings like the store name and contact details and colors for the website theme.
 @public_bp.route('/settings', methods=['GET'])
 def get_settings():
     settings = SiteSettings.query.first()

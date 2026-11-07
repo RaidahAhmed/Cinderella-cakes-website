@@ -453,6 +453,43 @@ button { font-family: inherit; }
   transform: scale(1.03);
   box-shadow: 0 8px 28px rgba(138, 51, 138, 0.2);
 }
+
+/* Gallery item with order overlay */
+.gallery-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  aspect-ratio: 1 / 1;
+}
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .3s ease;
+}
+.gallery-item:hover img {
+  transform: scale(1.05);
+}
+.gallery-item-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(104, 33, 104, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.gallery-item:hover .gallery-item-overlay {
+  opacity: 1;
+}
+.gallery-order-btn {
+  font-size: .8rem !important;
+  padding: 10px 20px !important;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
 .gallery-cta {
   text-align: center;
   margin-top: 48px;
@@ -798,6 +835,26 @@ button { font-family: inherit; }
   .order-card { margin-top: -24px; }
   .gallery-grid { grid-template-columns: 1fr 1fr; }
   .footer-wrap { grid-template-columns: 1fr; text-align: left; }
+
+  /* Contact page text sizes match nav bar on mobile */
+  .contact-method h4 {
+    font-size: .92rem;
+  }
+  .contact-method p {
+    font-size: .82rem;
+  }
+  .hours-card h3 {
+    font-size: 1rem;
+  }
+  .hours-row {
+    font-size: .88rem;
+  }
+  .ready-card h2 {
+    font-size: 1.2rem;
+  }
+  .ready-card > p {
+    font-size: .92rem;
+  }
   .about-images img { height: 220px; }
 }
 
@@ -805,6 +862,19 @@ button { font-family: inherit; }
   .gallery-grid { grid-template-columns: 1fr; }
   .hero-actions .btn { flex: 1; }
   .visit-image img { height: 260px; }
+
+  /* On mobile, show order button below each gallery image instead of hover overlay */
+  .gallery-item-overlay {
+    position: relative;
+    opacity: 1;
+    background: transparent;
+    padding: 8px 0;
+  }
+  .gallery-order-btn {
+    width: 100%;
+    font-size: .78rem !important;
+    padding: 8px 16px !important;
+  }
 }
 
 /* Respect reduced-motion preferences */

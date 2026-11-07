@@ -1,5 +1,24 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { submitOrder } from '../lib/api';
+
+const CAKE_SIZES = [
+  { value: '', label: 'Select a size...' },
+  { value: '6" (serves 6-8)', label: '6″ — serves 6–8' },
+  { value: '8" (serves 10-14)', label: '8″ — serves 10–14' },
+  { value: '10" (serves 20-25)', label: '10″ — serves 20–25' },
+  { value: '12" (serves 30-40)', label: '12″ — serves 30–40' },
+  { value: '14" (serves 50-60)', label: '14″ — serves 50–60' },
+  { value: '16" (serves 60-80)', label: '16″ — serves 60–80' },
+];
+
+const TIER_OPTIONS = [
+  { value: '1', label: '1 Tier' },
+  { value: '2', label: '2 Tiers' },
+  { value: '3', label: '3 Tiers' },
+  { value: '4', label: '4 Tiers' },
+  { value: '5', label: '5 Tiers' },
+];
 
 const initialFormState = {
   fullName: '',
@@ -8,6 +27,7 @@ const initialFormState = {
   eventDate: '',
   flavor: '',
   cakeSize: '',
+  tiers: '1',
   specialInstructions: '',
   deliveryType: 'pickup',
   deliveryAddress: '',
@@ -15,7 +35,15 @@ const initialFormState = {
 
 // Handles the cake ordering process, capturing customer details and sending them to the backend.
 export default function Order() {
-  const [form, setForm] = useState(initialFormState);
+  const [searchParams] = useSearchParams();
+  const galleryRef = searchParams.get('gallery_ref');
+
+  const [form, setForm] = useState({
+    ...initialFormState,
+    specialInstructions: galleryRef
+      ? `I'd like a cake similar to gallery image #${galleryRef}. `
+      : '',
+  });
   const [inspirationImage, setInspirationImage] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -35,8 +63,15 @@ export default function Order() {
     setStatus(null);
     setSubmitting(true);
 
+    // Combine size + tiers into the cake_size field for the backend
+    const combinedSize = `${form.cakeSize} — ${form.tiers} tier${form.tiers !== '1' ? 's' : ''}`;
+
     try {
-      const { ok, data } = await submitOrder({ ...form, inspirationImage });
+      const { ok, data } = await submitOrder({
+        ...form,
+        cakeSize: form.cakeSize ? combinedSize : '',
+        inspirationImage,
+      });
 
       if (ok && data.success) {
         setForm(initialFormState);
@@ -74,6 +109,12 @@ export default function Order() {
 
       <section className="section">
         <div className="container">
+          {galleryRef && (
+            <div className="form-note" style={{ maxWidth: 880, margin: '-20px auto 24px' }}>
+              ✨ You're ordering based on a cake from our gallery (Ref&nbsp;#{galleryRef}). Feel free to customise the details below!
+            </div>
+          )}
+
           <form className="order-card" onSubmit={handleSubmit} noValidate>
             <h2>Cake order details</h2>
             <hr className="form-divider" />
@@ -159,13 +200,26 @@ export default function Order() {
                 </label>
               </Field>
 
-              <Field label="Cake size" id="cakeSize" error={errors.cake_size}>
-                <input
-                  type="text"
-                  placeholder="e.g. Medium (serves 20)"
+              <Field label="Cake size (base diameter)" id="cakeSize" error={errors.cake_size}>
+                <select
                   value={form.cakeSize}
                   onChange={(e) => updateField('cakeSize', e.target.value)}
-                />
+                >
+                  {CAKE_SIZES.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Number of tiers" id="tiers" error={null}>
+                <select
+                  value={form.tiers}
+                  onChange={(e) => updateField('tiers', e.target.value)}
+                >
+                  {TIER_OPTIONS.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
               </Field>
 
               <Field label="Delivery type" id="deliveryType" error={null}>

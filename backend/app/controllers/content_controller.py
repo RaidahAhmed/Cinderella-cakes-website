@@ -6,7 +6,7 @@ from app.utils.decorators import permission_required
 # Manages the dynamic content sections and blocks for pages.
 content_bp = Blueprint('content', __name__, url_prefix='/api/content')
 
-# Creates a new layout section on a page (e.g. a grid or banner).
+# Creates a new layout section on a page (e.g. hero, features, testimonials).
 @content_bp.route('/sections', methods=['POST'])
 @permission_required('content_write')
 def create_section():

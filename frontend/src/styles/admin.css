@@ -127,3 +127,149 @@
   flex-direction: column;
   gap: 16px;
 }
+
+/* =========================================================
+   Admin form controls
+   ========================================================= */
+.admin-input {
+  border: 1.5px solid #D9C4E8;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: .92rem;
+  background: var(--white);
+  color: var(--ink);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.admin-input:focus {
+  border-color: var(--teal);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(64, 186, 218, .15);
+}
+
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: .9rem;
+  border: none;
+  cursor: pointer;
+  background: var(--gradient);
+  color: var(--white);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.admin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(138, 51, 138, 0.3);
+}
+.admin-btn:active {
+  transform: translateY(0) scale(.98);
+}
+.admin-btn[disabled] {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+.admin-btn.btn-danger {
+  background: linear-gradient(100deg, #c0392b 0%, #e74c3c 100%);
+}
+.admin-btn.btn-danger:hover {
+  box-shadow: 0 6px 16px rgba(231, 76, 60, 0.3);
+}
+
+/* =========================================================
+   Admin gallery grid
+   ========================================================= */
+.admin-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+.admin-gallery-item {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(138, 51, 138, 0.08);
+}
+.admin-gallery-image {
+  width: 100%;
+  height: 180px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.admin-gallery-details {
+  padding: 12px;
+}
+.admin-gallery-details h4 {
+  font-family: var(--font-display);
+  font-size: .95rem;
+  margin: 0 0 4px;
+  color: var(--purple-dark);
+}
+.admin-gallery-details p {
+  font-size: .82rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+/* =========================================================
+   Status select in admin orders
+   ========================================================= */
+.status-select {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid #D9C4E8;
+  font-family: var(--font-body);
+  font-size: .85rem;
+  cursor: pointer;
+  background: var(--white);
+}
+.status-select:focus {
+  border-color: var(--teal);
+  outline: none;
+}
+
+/* =========================================================
+   Admin page general
+   ========================================================= */
+.admin-page h2 {
+  font-family: var(--font-display);
+  color: var(--purple-dark);
+}
+.admin-page h3 {
+  font-family: var(--font-display);
+  color: var(--purple-dark);
+}
+
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+  .admin-sidebar {
+    width: 100%;
+  }
+  .admin-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 8px;
+  }
+  .admin-nav-link {
+    padding: 8px 16px;
+    white-space: nowrap;
+    font-size: .85rem;
+  }
+  .admin-content {
+    padding: 16px;
+  }
+  .admin-gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}

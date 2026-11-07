@@ -13,6 +13,7 @@ import Login from './pages/admin/Login';
 import AdminOrders from './pages/admin/Orders';
 import AdminGallery from './pages/admin/Gallery';
 import AdminSettings from './pages/admin/Settings';
+import ContentEditor from './pages/admin/ContentEditor';
 
 // Sets up the main structure and routing for the entire website.
 export default function App() {
@@ -35,6 +36,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="gallery" element={<AdminGallery />} />
+          <Route path="content" element={<ContentEditor />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
       </Routes>

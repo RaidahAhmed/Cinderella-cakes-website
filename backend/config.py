@@ -14,7 +14,8 @@ class Config:
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
     
     # Uploads
-    UPLOAD_FOLDER = 'app/static/uploads/inspiration'
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'uploads', 'inspiration')
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB
     
     # CORS

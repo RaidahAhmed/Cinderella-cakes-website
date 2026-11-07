@@ -89,3 +89,35 @@ def get_current_user():
         'success': True,
         'user': user.to_dict()
     }), HTTP_200_OK
+
+
+# Allows the logged-in user to change their password.
+@auth.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    try:
+        identity = get_jwt_identity()
+        user = User.query.get(int(identity))
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), HTTP_404_NOT_FOUND
+
+        data = request.get_json()
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+
+        if not current_password or not new_password:
+            return jsonify({'success': False, 'message': 'Current and new password are required'}), HTTP_400_BAD_REQUEST
+
+        if not user.check_password(current_password):
+            return jsonify({'success': False, 'message': 'Current password is incorrect'}), HTTP_401_UNAUTHORIZED
+
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'message': 'New password must be at least 6 characters'}), HTTP_400_BAD_REQUEST
+
+        user.set_password(new_password)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Password changed successfully'}), HTTP_200_OK
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
