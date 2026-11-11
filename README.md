@@ -1,6 +1,6 @@
 # Cinderella Cakes
 
-Cinderella Cakes is a modern, responsive web application for a boutique bakery based in Kampala, Uganda. It features a public-facing website for customers to explore cakes, view galleries, and place custom orders, alongside a secure administrative backend for managing content, galleries, and incoming orders.
+Cinderella Cakes is a modern, responsive web application for a bakery based in Kampala, Uganda. It features a public-facing website for customers to explore cakes, view galleries, and place custom orders, alongside a secure administrative backend for managing content, galleries, and incoming orders.
 
 ## Tech Stack
 * **Frontend:** React, React Router, Vite

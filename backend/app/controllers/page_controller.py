@@ -24,7 +24,9 @@ def get_page(id):
 @page_bp.route('/', methods=['POST'])
 @permission_required('content_write')
 def create_page():
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     page = Page(
         slug=data['slug'],
         title=data['title'],
@@ -40,7 +42,9 @@ def create_page():
 @permission_required('content_write')
 def update_page(id):
     page = Page.query.get_or_404(id)
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     if 'slug' in data: page.slug = data['slug']
     if 'title' in data: page.title = data['title']
     if 'meta_description' in data: page.meta_description = data['meta_description']

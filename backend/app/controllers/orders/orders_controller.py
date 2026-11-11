@@ -182,7 +182,9 @@ def update_order_status(order_id):
         if not order:
             return jsonify({"success": False, "message": "Order not found"}), HTTP_404_NOT_FOUND
             
-        data = request.json
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
         if 'status' in data:
             order.status = data['status']
             db.session.commit()

@@ -17,7 +17,9 @@ def get_roles():
 @rbac_bp.route('/roles', methods=['POST'])
 @role_required('super_admin')
 def create_role():
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     role = Role(
         name=data['name'],
         description=data.get('description')
@@ -36,7 +38,9 @@ def create_role():
 @role_required('super_admin')
 def update_role(id):
     role = Role.query.get_or_404(id)
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     
     if 'name' in data:
         role.name = data['name']

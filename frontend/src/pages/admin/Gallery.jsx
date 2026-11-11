@@ -77,13 +77,13 @@ export default function Gallery() {
 
       <div className="admin-card" style={{ marginBottom: '24px' }}>
         <h3>Upload New Image</h3>
-        <form onSubmit={handleUpload} style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <form onSubmit={handleUpload} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'end' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '4px' }}>Image File</label>
-            <input type="file" accept="image/*" ref={fileInputRef} required />
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '.9rem', fontWeight: 600 }}>Image File</label>
+            <input type="file" accept="image/*" ref={fileInputRef} required className="admin-input" style={{ padding: '8px' }} />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: '4px' }}>Title (Optional)</label>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '.9rem', fontWeight: 600 }}>Title (Optional)</label>
             <input 
               type="text" 
               value={title} 
@@ -93,7 +93,7 @@ export default function Gallery() {
             />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: '4px' }}>Description (Optional)</label>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '.9rem', fontWeight: 600 }}>Description (Optional)</label>
             <input 
               type="text" 
               value={description} 
@@ -102,9 +102,11 @@ export default function Gallery() {
               className="admin-input"
             />
           </div>
-          <button type="submit" className="admin-btn" disabled={uploading}>
-            {uploading ? 'Uploading...' : 'Upload'}
-          </button>
+          <div>
+            <button type="submit" className="admin-btn" disabled={uploading} style={{ width: '100%', minHeight: '44px' }}>
+              {uploading ? 'Uploading...' : 'Upload Image'}
+            </button>
+          </div>
         </form>
       </div>
 

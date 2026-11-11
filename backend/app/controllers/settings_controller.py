@@ -26,7 +26,9 @@ def update_settings():
         settings = SiteSettings()
         db.session.add(settings)
         
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     for key in ['site_name', 'logo_url', 'favicon_url', 'contact_email', 'contact_phone', 'address', 'primary_color', 'secondary_color']:
         if key in data:
             setattr(settings, key, data[key])

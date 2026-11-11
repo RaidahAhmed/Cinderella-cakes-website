@@ -45,6 +45,11 @@ def create_app(env_name="development"):
     # JWT error handlers are provided by flask-jwt-extended automatically,
     # but we can customize them if needed here
 
+    # Health check endpoint for Render
+    @app.route('/api/health')
+    def health():
+        return jsonify({'status': 'ok'}), 200
+
     # Create upload directory if it doesn't exist
     upload_path = os.path.join(app.root_path, 'static', 'uploads', 'inspiration')
     os.makedirs(upload_path, exist_ok=True)

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import logoImg from '../assets/logo-no-bg.png';
 
@@ -11,6 +11,17 @@ export default function Header() {
   function closeMenu() {
     setMenuOpen(false);
   }
+
+  // Close menu on Escape key press
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && menuOpen) {
+        setMenuOpen(false);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [menuOpen]);
 
   return (
     <header className="site-header">
@@ -29,6 +40,12 @@ export default function Header() {
           <span></span>
           <span></span>
         </button>
+
+        <div
+          className={`nav-backdrop${menuOpen ? ' open' : ''}`}
+          onClick={closeMenu}
+          aria-hidden="true"
+        />
 
         <nav className={'main-nav' + (menuOpen ? ' open' : '')}>
           <NavLink to="/" end className={linkClass} onClick={closeMenu}>

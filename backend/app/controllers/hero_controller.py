@@ -11,7 +11,9 @@ hero_bp = Blueprint('heroes', __name__, url_prefix='/api/heroes')
 @hero_bp.route('/', methods=['POST'])
 @permission_required('content_write')
 def create_hero():
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     page_id = data.get('page_id')
     
     # Check if page already has a hero
@@ -41,7 +43,9 @@ def create_hero():
 @permission_required('content_write')
 def update_hero(id):
     hero = HeroSection.query.get_or_404(id)
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     
     for key in ['eyebrow', 'heading', 'heading_accent', 'subheading', 'primary_image_url', 'secondary_image_url', 'primary_button_text', 'primary_button_url', 'secondary_button_text', 'secondary_button_url']:
         if key in data:

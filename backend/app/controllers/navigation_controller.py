@@ -17,7 +17,9 @@ def get_items():
 @navigation_bp.route('/', methods=['POST'])
 @permission_required('content_write')
 def create_item():
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     item = MenuItem(
         label=data['label'],
         url=data['url'],
@@ -34,7 +36,9 @@ def create_item():
 @permission_required('content_write')
 def update_item(id):
     item = MenuItem.query.get_or_404(id)
-    data = request.json
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
     for key in ['label', 'url', 'order', 'is_active', 'is_button']:
         if key in data:
             setattr(item, key, data[key])
