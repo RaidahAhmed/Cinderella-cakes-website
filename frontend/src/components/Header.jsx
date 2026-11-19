@@ -57,6 +57,9 @@ export default function Header() {
           <NavLink to="/gallery" className={linkClass} onClick={closeMenu}>
             Gallery
           </NavLink>
+          <NavLink to="/blog" className={linkClass} onClick={closeMenu}>
+            Blog
+          </NavLink>
           <NavLink to="/order" className={linkClass} onClick={closeMenu}>
             Order
           </NavLink>

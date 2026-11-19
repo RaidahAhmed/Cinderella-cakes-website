@@ -56,11 +56,38 @@ function normaliseGalleryItems(payload) {
   return payload.items || payload.gallery_items || [];
 }
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Public GET with a timeout and a few patient retries. Free hosting plans put the
+// server to sleep when nobody is using it, and the first request can take up to a
+// minute to be answered; without this the gallery looks "stuck" or broken.
+async function fetchPublic(url, { attempts = 4, timeoutMs = 25000 } = {}) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      // A real answer (even a 404) is final. Only server errors are worth another try.
+      if (res.status < 500) return res;
+      lastError = await buildError(res, 'The server is busy right now.');
+    } catch (err) {
+      lastError = err.name === 'AbortError'
+        ? new Error('The server is taking a while to wake up.')
+        : err;
+    } finally {
+      clearTimeout(timer);
+    }
+    if (attempt < attempts) await wait(1500 * attempt);
+  }
+  throw lastError;
+}
+
 // Retrieves the images and details for the public photo gallery.
 // An optional category key (e.g. 'wedding') narrows the list to that category.
 export async function fetchGallery(category) {
   const filter = category && category !== 'all' ? `?category=${encodeURIComponent(category)}` : '';
-  const res = await fetch(`${API_URL}/gallery${filter}`);
+  const res = await fetchPublic(`${API_URL}/gallery${filter}`);
   if (!res.ok) throw await buildError(res, 'Failed to fetch gallery');
   return normaliseGalleryItems(await res.json());
 }
@@ -68,10 +95,51 @@ export async function fetchGallery(category) {
 // Retrieves every gallery category with the number of items it holds.
 // Resolves to [{ key, label, count }, ...].
 export async function fetchGalleryCategories() {
-  const res = await fetch(`${API_URL}/gallery/categories`);
+  const res = await fetchPublic(`${API_URL}/gallery/categories`);
   if (!res.ok) throw await buildError(res, 'Failed to fetch categories');
   const data = await res.json();
   return Array.isArray(data) ? data : data.categories || [];
+}
+
+// Retrieves one cake with its story, plus similar cakes from the same category.
+// Resolves to { item, categoryLabel, related }.
+export async function fetchGalleryDetail(id) {
+  const value = String(id).trim();
+  if (!/^[0-9]{1,10}$/.test(value) || Number(value) < 1 || Number(value) > 2147483647) {
+    throw new Error('That cake could not be found.');
+  }
+  const res = await fetchPublic(`${API_URL}/gallery/${value}`);
+  if (res.status === 404) throw new Error('That cake is no longer in our gallery.');
+  if (!res.ok) throw await buildError(res, 'We could not load this cake right now.');
+  const data = await res.json();
+  return {
+    item: data.item,
+    categoryLabel: data.category_label,
+    related: data.related || [],
+  };
+}
+
+// ========================
+// PUBLIC API (BLOG)
+// ========================
+
+// Lists published articles, newest first. Optional { limit }.
+export async function fetchBlogPosts({ limit } = {}) {
+  const query = limit ? `?limit=${encodeURIComponent(limit)}` : '';
+  const res = await fetchPublic(`${API_URL}/blog${query}`);
+  if (!res.ok) throw await buildError(res, 'We could not load the blog right now.');
+  const data = await res.json();
+  return data.posts || [];
+}
+
+// Retrieves one published article plus a few more to read next.
+// Resolves to { post, more }.
+export async function fetchBlogPost(slug) {
+  const res = await fetchPublic(`${API_URL}/blog/${encodeURIComponent(slug)}`);
+  if (res.status === 404) throw new Error('That article could not be found.');
+  if (!res.ok) throw await buildError(res, 'We could not load this article right now.');
+  const data = await res.json();
+  return { post: data.post, more: data.more || [] };
 }
 
 // Retrieves a single gallery item by id (the list endpoint is the public source of truth).
@@ -226,6 +294,39 @@ export async function deleteGalleryItem(id) {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw await buildError(res, 'Failed to delete image');
+  return res.json();
+}
+
+// ========================
+// ADMIN API (BLOG)
+// ========================
+
+// Lists every article, drafts included, with its full text. Requires login.
+export async function fetchAdminBlogPosts() {
+  const res = await fetch(`${API_URL}/blog/admin/all`, { headers: getAuthHeaders() });
+  if (!res.ok) throw await buildError(res, 'Failed to load articles');
+  const data = await res.json();
+  return data.posts || [];
+}
+
+// Creates (no id) or updates (with id) an article. Takes FormData so a cover image can be sent.
+export async function saveBlogPost(id, formData) {
+  const res = await fetch(`${API_URL}/blog/admin${id ? `/${id}` : ''}`, {
+    method: id ? 'PUT' : 'POST',
+    headers: getAuthHeaders(),
+    body: formData,
+  });
+  if (!res.ok) throw await buildError(res, 'Failed to save the article');
+  return res.json();
+}
+
+// Permanently removes an article. Requires login.
+export async function deleteBlogPost(id) {
+  const res = await fetch(`${API_URL}/blog/admin/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw await buildError(res, 'Failed to delete the article');
   return res.json();
 }
 

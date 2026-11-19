@@ -189,7 +189,7 @@ export default function Gallery() {
       </div>
 
       <div className="admin-card" style={{ marginBottom: '24px' }}>
-        <h3>Upload New Image</h3>
+        <h3>Add a New Cake</h3>
         <form
           onSubmit={handleUpload}
           style={{
@@ -215,13 +215,14 @@ export default function Gallery() {
             />
           </div>
           <div>
-            <label className="admin-field-label">Description (Optional)</label>
-            <input
-              type="text"
+            <label className="admin-field-label">Short story (Optional, shown on the cake's page)</label>
+            <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Short description..."
+              placeholder="Tell the story: the occasion, the flavours, what makes this cake special..."
               className="admin-input"
+              rows={3}
+              maxLength={500}
             />
           </div>
           <div>
@@ -288,11 +289,19 @@ export default function Gallery() {
                   {CATEGORY_LABELS[item.category] || 'Other'}
                 </span>
                 <h4>{item.title || 'Untitled'}</h4>
-                <p>{item.description || 'No description'}</p>
+                <p>{item.description || 'No story yet'}</p>
                 <div className="admin-gallery-actions">
                   <button type="button" onClick={() => startEditing(item)} className="admin-btn admin-btn-ghost">
                     Edit
                   </button>
+                  <a
+                    className="admin-btn admin-btn-ghost"
+                    href={`/gallery/${item.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View
+                  </a>
                   <button type="button" onClick={() => handleDelete(item.id)} className="admin-btn btn-danger">
                     Delete
                   </button>
@@ -343,15 +352,17 @@ export default function Gallery() {
                 autoFocus
               />
 
-              <label className="admin-field-label" htmlFor="edit-description">Description</label>
+              <label className="admin-field-label" htmlFor="edit-description">Short story</label>
               <textarea
                 id="edit-description"
                 className="admin-input"
-                rows={3}
+                rows={4}
+                maxLength={500}
                 value={editing.description}
                 onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-                placeholder="Short description..."
+                placeholder="Tell the story: the occasion, the flavours, what makes this cake special..."
               />
+              <p className="admin-blog-help">{editing.description.length} / 500 characters</p>
 
               <label className="admin-field-label" htmlFor="edit-category">Category</label>
               <select

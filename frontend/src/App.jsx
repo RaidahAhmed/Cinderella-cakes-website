@@ -4,6 +4,7 @@ import PublicLayout from './components/PublicLayout';
 import Home from './pages/Home';
 import About from './pages/About';
 import Gallery from './pages/Gallery';
+import CakeDetail from './pages/CakeDetail';
 import Order from './pages/Order';
 import Contact from './pages/Contact';
 
@@ -16,10 +17,13 @@ const AdminGallery = lazy(() => import('./pages/admin/Gallery'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 const ContentEditor = lazy(() => import('./pages/admin/ContentEditor'));
 const AdminReviews = lazy(() => import('./pages/admin/Reviews'));
+const AdminBlog = lazy(() => import('./pages/admin/Blog'));
 
 // Public secondary pages are lazy loaded too so they stay out of the home bundle.
 const Track = lazy(() => import('./pages/Track'));
 const Reviews = lazy(() => import('./pages/Reviews'));
+const Blog = lazy(() => import('./pages/Blog'));
+const BlogPost = lazy(() => import('./pages/BlogPost'));
 
 function AdminFallback() {
   return (
@@ -47,6 +51,17 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/gallery/:id" element={<CakeDetail />} />
+          <Route path="/blog" element={
+            <Suspense fallback={<PageFallback />}>
+              <Blog />
+            </Suspense>
+          } />
+          <Route path="/blog/:slug" element={
+            <Suspense fallback={<PageFallback />}>
+              <BlogPost />
+            </Suspense>
+          } />
           <Route path="/order" element={<Order />} />
           <Route path="/track" element={
             <Suspense fallback={<PageFallback />}>
@@ -77,6 +92,7 @@ export default function App() {
           <Route path="orders" element={<AdminOrders />} />
           <Route path="gallery" element={<AdminGallery />} />
           <Route path="reviews" element={<AdminReviews />} />
+          <Route path="blog" element={<AdminBlog />} />
           <Route path="content" element={<ContentEditor />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { fetchGallery, fetchGalleryCategories, isVideoMedia } from '../lib/api';
 import GalleryMedia from '../components/GalleryMedia';
@@ -25,8 +25,8 @@ function labelFor(key, categories) {
   return CATEGORY_LABELS[key] || 'Other';
 }
 
-// API-driven gallery: browse pastry work by category, open a design in a
-// lightbox, and jump straight into the order form with that design attached.
+// API-driven gallery: browse cakes by category, open any cake on its own
+// shareable page (/gallery/<id>), or jump straight into the order form.
 export default function Gallery() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get('c') || 'all';
@@ -34,16 +34,10 @@ export default function Gallery() {
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [slow, setSlow] = useState(false);
   const [error, setError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [activeItem, setActiveItem] = useState(null);
-  const closeLightbox = useCallback(() => setActiveItem(null), []);
   const galleryRef = useRef(null);
-
-  function openLightbox(item) {
-    galleryRef.current?.querySelectorAll('video').forEach((video) => video.pause());
-    setActiveItem(item);
-  }
 
   // Load the category list once — it also powers the counts on the pills.
   useEffect(() => {
@@ -60,13 +54,19 @@ export default function Gallery() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   // Reload the grid whenever the category in the URL changes.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setSlow(false);
     setError(null);
+
+    // If the server is still waking up, tell the visitor instead of showing a blank page.
+    const slowTimer = setTimeout(() => {
+      if (!cancelled) setSlow(true);
+    }, 6000);
 
     fetchGallery(activeCategory)
       .then((data) => {
@@ -79,11 +79,13 @@ export default function Gallery() {
         setError(err.message || 'We could not load the gallery right now.');
       })
       .finally(() => {
+        clearTimeout(slowTimer);
         if (!cancelled) setLoading(false);
       });
 
     return () => {
       cancelled = true;
+      clearTimeout(slowTimer);
     };
   }, [activeCategory, reloadKey]);
 
@@ -110,7 +112,7 @@ export default function Gallery() {
           <span className="eyebrow">Our Work</span>
           <h1 className="gallery-hero-title">Our Cake Gallery</h1>
           <p className="gallery-hero-sub">
-            Love a design? Click &ldquo;Order This Design&rdquo; on any cake to start your order!
+            Tap any cake to read its story, share it, and order that exact design.
           </p>
           <span className="gallery-hero-rule" aria-hidden="true" />
         </div>
@@ -146,7 +148,7 @@ export default function Gallery() {
           {loading && (
             <div className="gallery-state" role="status" aria-live="polite">
               <span className="gallery-spinner" aria-hidden="true" />
-              <p>Gathering the cakes&hellip;</p>
+              <p>{slow ? 'Our kitchen is waking up — the cakes are on their way…' : 'Gathering the cakes…'}</p>
             </div>
           )}
 
@@ -183,36 +185,36 @@ export default function Gallery() {
                   style={{ animationDelay: `${Math.min(index, 11) * 55}ms` }}
                 >
                   {isVideoMedia(item) ? (
-                    <div className="cake-card-media">
+                    <div className="cake-card-media cake-card-media-video">
                       <GalleryMedia item={item} className="cake-card-img" />
                     </div>
                   ) : (
-                    <button
-                      type="button"
+                    <Link
+                      to={`/gallery/${item.id}`}
                       className="cake-card-media"
-                      onClick={() => openLightbox(item)}
-                      aria-label={`View ${item.title || 'this cake'} in full`}
+                      aria-label={`Open ${item.title || 'this cake'}`}
                     >
                       <GalleryMedia item={item} className="cake-card-img" />
                       <span className="cake-card-veil" aria-hidden="true">
-                        <span className="cake-card-zoom">View design</span>
+                        <span className="cake-card-zoom">View story</span>
                       </span>
-                    </button>
+                    </Link>
                   )}
 
                   <div className="cake-card-body">
                     <span className="cake-card-cat">{labelFor(item.category, categories)}</span>
-                    <h3 className="cake-card-title">{item.title || 'Signature cake'}</h3>
+                    <h3 className="cake-card-title">
+                      <Link to={`/gallery/${item.id}`}>{item.title || 'Signature cake'}</Link>
+                    </h3>
                     {item.description && <p className="cake-card-desc">{item.description}</p>}
-                    {isVideoMedia(item) && (
-                      <button type="button" className="btn btn-outline" onClick={() => openLightbox(item)}>
-                        View video design
-                      </button>
-                    )}
-                    <Link className="cake-card-cta" to={`/order?cake=${item.id}`}>
-                      Order This Design
-                      <span aria-hidden="true">&rarr;</span>
-                    </Link>
+                    <div className="cake-card-actions">
+                      <Link className="cake-card-cta" to={`/gallery/${item.id}`}>
+                        View &amp; share
+                      </Link>
+                      <Link className="btn btn-gradient cake-card-order" to={`/order?cake=${item.id}`}>
+                        Order this design
+                      </Link>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -227,106 +229,6 @@ export default function Gallery() {
           </div>
         </div>
       </section>
-
-      {activeItem && (
-        <Lightbox
-          item={activeItem}
-          categoryLabel={labelFor(activeItem.category, categories)}
-          onClose={closeLightbox}
-        />
-      )}
     </>
-  );
-}
-
-// Accessible detail overlay: Escape closes, Tab stays inside, and the
-// element that opened it regains focus afterwards.
-function Lightbox({ item, categoryLabel, onClose }) {
-  const panelRef = useRef(null);
-  const closeRef = useRef(null);
-
-  useEffect(() => {
-    const previouslyFocused = document.activeElement;
-    closeRef.current?.focus();
-    document.body.style.overflow = 'hidden';
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (event.key !== 'Tab' || !panelRef.current) return;
-
-      const focusables = panelRef.current.querySelectorAll(
-        'a[href], button:not([disabled]), input, select, textarea, video[controls]',
-      );
-      if (focusables.length === 0) return;
-
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
-    };
-  }, [onClose]);
-
-  return (
-    <div className="lightbox" role="presentation" onClick={onClose}>
-      <div
-        className="lightbox-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="lightbox-title"
-        ref={panelRef}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          className="lightbox-close"
-          onClick={onClose}
-          aria-label="Close design preview"
-          ref={closeRef}
-        >
-          <span aria-hidden="true">&times;</span>
-        </button>
-
-        <div className="lightbox-media">
-          <GalleryMedia item={item} />
-        </div>
-
-        <div className="lightbox-body">
-          <span className="lightbox-cat">{categoryLabel}</span>
-          <h2 className="lightbox-title" id="lightbox-title">
-            {item.title || 'Signature cake'}
-          </h2>
-          {item.description ? (
-            <p className="lightbox-desc">{item.description}</p>
-          ) : (
-            <p className="lightbox-desc">
-              Handcrafted by our bakers — tell us your colours, tiers and flavour on the order form.
-            </p>
-          )}
-          <Link className="btn btn-gradient lightbox-cta" to={`/order?cake=${item.id}`}>
-            Order This Design
-          </Link>
-          <p className="lightbox-hint">Cake designs can be recoloured and resized to suit your celebration.</p>
-        </div>
-      </div>
-    </div>
   );
 }

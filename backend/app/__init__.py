@@ -71,4 +71,9 @@ def create_app(env_name="development"):
     def gallery_media(filename):
         return serve_media(Path(app.config['UPLOAD_FOLDER']) / 'gallery', filename)
 
+    # Blog cover images uploaded from the admin dashboard.
+    @app.route('/static/uploads/blog/<path:filename>')
+    def blog_media(filename):
+        return serve_media(Path(app.config['UPLOAD_FOLDER']) / 'blog', filename)
+
     return app

@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# If an existing asset or directory is requested, serve it directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Leave /api and /static requests alone (they go to the backend)
+RewriteRule ^api(/|$) - [L]
+RewriteRule ^static(/|$) - [L]
+
+# For everything else, serve index.html so React Router can handle it
+RewriteRule ^ index.html [L]
+

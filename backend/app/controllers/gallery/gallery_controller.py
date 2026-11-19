@@ -101,6 +101,35 @@ def get_gallery_categories():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
 
+# Returns one cake with its story, plus other cakes from the same category
+# ("More like this"). Used by the shareable /gallery/<id> page.
+RELATED_LIMIT = 6
+
+@gallery.route('/<int:item_id>', methods=['GET'])
+def get_gallery_item(item_id):
+    try:
+        item = db.session.get(GalleryItem, item_id)
+        if not item:
+            return jsonify({"success": False, "message": "Gallery item not found"}), HTTP_404_NOT_FOUND
+
+        category = (item.category or 'other').strip().lower() or 'other'
+        related = (
+            GalleryItem.query
+            .filter(GalleryItem.category == item.category, GalleryItem.id != item.id)
+            .order_by(GalleryItem.created_at.desc(), GalleryItem.id.desc())
+            .limit(RELATED_LIMIT)
+            .all()
+        )
+
+        return jsonify({
+            "success": True,
+            "item": item.to_dict(),
+            "category_label": CATEGORY_LABELS.get(category, category.replace('_', ' ').title()),
+            "related": [entry.to_dict() for entry in related],
+        }), HTTP_200_OK
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
+
 # Uploads and saves a new image to the gallery. Requires content write permission.
 @gallery.route('/create', methods=['POST'])
 @permission_required('content_write')

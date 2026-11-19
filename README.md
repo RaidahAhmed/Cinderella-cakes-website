@@ -68,6 +68,25 @@ Cinderella Cakes is a modern, responsive web application for a bakery based in K
    python run.py
    ```
 
+### Cake pages and blog
+
+- **Cake page:** every gallery cake opens at `/gallery/<id>` with its story, a share button, an
+  "Order this design" button and a "More like this" row of cakes from the same category.
+  The API for it is `GET /api/v1/gallery/<id>`.
+- **Blog:** public pages are `/blog` and `/blog/<slug>`. Admins write, edit, hide/publish and delete
+  articles under **Admin → Blog** (plain text: blank line = new paragraph, `## ` = heading, optional
+  cover image). Cover images are stored in `UPLOAD_FOLDER/blog/` and served from `/static/uploads/blog/`,
+  so keep that folder on persistent storage like the rest of `UPLOAD_FOLDER`.
+- **Database change:** revision `a4e91c3b7d20` follows `7c42e1f9a015` and only creates the new
+  `blog_posts` table. Apply it with the usual `flask --app run:app db upgrade` (back up first).
+- **Starter articles:** after migrating, run `python seed_blog.py` from `backend/` to add six starter
+  articles from `data/blog_posts.json`. It skips any article whose slug already exists and changes
+  nothing else.
+- **Slow first load:** hosts on free plans put the API to sleep when idle. The public pages now retry
+  patiently and show "our kitchen is waking up" instead of looking broken.
+- **Tests:** `tests/test_blog_and_gallery_detail.py` covers the new endpoints (run with the same
+  `unittest discover` command shown below).
+
 ### Gallery source and persistent media
 
 - The checked-in `backend/data/gallery_catalog.json` contains **120 originals: 119 JPG and 1 MP4**.

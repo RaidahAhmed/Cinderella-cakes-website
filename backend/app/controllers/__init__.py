@@ -12,6 +12,7 @@ from .content_controller import content_bp
 from .footer_controller import footer_bp
 from .user_controller import user_bp
 from .rbac_controller import rbac_bp
+from .blog_controller import blog_bp
 
 all_blueprints = [
     orders, 
@@ -27,5 +28,6 @@ all_blueprints = [
     content_bp,
     footer_bp,
     user_bp,
-    rbac_bp
+    rbac_bp,
+    blog_bp
 ]

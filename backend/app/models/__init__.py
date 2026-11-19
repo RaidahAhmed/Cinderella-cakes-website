@@ -1,5 +1,6 @@
 from .orders import Order
 from .gallery import GalleryItem
+from .blog import BlogPost
 from .order_tracking import OrderStatusHistory
 from .review import Review
 from .rbac import User, Role, Permission, role_permissions
