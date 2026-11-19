@@ -1,7 +1,6 @@
 from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt
-from app.models.rbac import User
 
 def permission_required(permission_name):
     def wrapper(fn):

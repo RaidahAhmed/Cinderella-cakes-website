@@ -1,5 +1,7 @@
 from .orders import Order
 from .gallery import GalleryItem
+from .order_tracking import OrderStatusHistory
+from .review import Review
 from .rbac import User, Role, Permission, role_permissions
 from .page import Page
 from .navigation import MenuItem

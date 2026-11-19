@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 import { fetchOrders } from '../../lib/api';
 
+const STATUS_LABELS = {
+  new: 'New',
+  confirmed: 'Confirmed',
+  baking: 'Baking',
+  ready: 'Ready',
+  out_for_delivery: 'Out for Delivery',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
 // Admin dashboard showing high-level statistics and recent orders.
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
@@ -12,7 +22,8 @@ export default function Dashboard() {
         setOrders(data.orders);
         setStats({
           total: data.orders.length,
-          pending: data.orders.filter(o => o.status === 'pending').length,
+          // Orders start their life as 'new' before the bakery confirms them.
+          pending: data.orders.filter(o => o.status === 'new').length,
           // Add revenue if you add a price field later
         });
       }
@@ -32,7 +43,7 @@ export default function Dashboard() {
         </div>
         
         <div className="admin-card">
-          <h3 style={{ margin: '0 0 8px 0', color: 'var(--ink-soft)' }}>Pending Orders</h3>
+          <h3 style={{ margin: '0 0 8px 0', color: 'var(--ink-soft)' }}>New Orders</h3>
           <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--teal)' }}>{stats.pending}</div>
         </div>
       </div>
@@ -43,7 +54,7 @@ export default function Dashboard() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
+                <th>Reference</th>
                 <th>Customer</th>
                 <th>Event Date</th>
                 <th>Status</th>
@@ -52,14 +63,25 @@ export default function Dashboard() {
             <tbody>
               {orders.slice(0, 5).map(order => (
                 <tr key={order.id}>
-                  <td>#{order.id}</td>
+                  <td>
+                    <span className="admin-order-ref">{order.order_reference || `#${order.id}`}</span>
+                  </td>
                   <td>{order.full_name}</td>
                   <td>{new Date(order.event_date).toLocaleDateString()}</td>
                   <td>
-                    <span className={`status-badge status-${order.status}`}>{order.status}</span>
+                    <span className={`status-badge status-${order.status}`}>
+                      {STATUS_LABELS[order.status] || order.status}
+                    </span>
                   </td>
                 </tr>
               ))}
+              {orders.length === 0 && (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center' }}>
+                    No orders yet.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

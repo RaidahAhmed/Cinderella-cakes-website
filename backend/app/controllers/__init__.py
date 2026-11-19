@@ -1,6 +1,8 @@
 from .orders.orders_controller import orders
 from .gallery.gallery_controller import gallery
 from .auth.auth_controller import auth
+from .tracking_controller import tracking_bp
+from .review_controller import review_bp
 from .public_controller import public_bp
 from .settings_controller import settings_bp
 from .page_controller import page_bp
@@ -15,6 +17,8 @@ all_blueprints = [
     orders, 
     gallery, 
     auth,
+    tracking_bp,
+    review_bp,
     public_bp,
     settings_bp,
     page_bp,

@@ -28,6 +28,9 @@ export default function Footer() {
           <Link to="/" className={linkClass('/')}>Home</Link>
           <Link to="/about" className={linkClass('/about')}>About</Link>
           <Link to="/gallery" className={linkClass('/gallery')}>Gallery</Link>
+          <Link to="/order" className={linkClass('/order')}>Order</Link>
+          <Link to="/track" className={linkClass('/track')}>Track Your Order</Link>
+          <Link to="/reviews" className={linkClass('/reviews')}>Reviews</Link>
           <Link to="/contact" className={linkClass('/contact')}>Contact</Link>
         </div>
 
@@ -35,7 +38,7 @@ export default function Footer() {
           <h4>Contact</h4>
           <p>Ave Maria Rd, Nsambya</p>
           <p>+256781 470984</p>
-          <p>cinderellacakes@gmail.com</p>
+          <p>cinderellacakes2@gmail.com</p>
         </div>
 
         <div className="footer-col">

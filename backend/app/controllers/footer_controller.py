@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.extensions import db
-from app.models.footer import FooterColumn, FooterLink, SocialLink
+from app.models.footer import FooterColumn, FooterLink
 from app.utils.decorators import permission_required
 
 # Manages the structure and links of the website footer.

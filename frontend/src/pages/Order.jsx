@@ -1,6 +1,21 @@
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { submitOrder } from '../lib/api';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { fetchGalleryItem, submitOrder } from '../lib/api';
+import GalleryMedia from '../components/GalleryMedia';
+
+const CATEGORY_LABELS = {
+  wedding: 'Weddings & Introductions',
+  birthday: 'Birthdays',
+  kids: "Kids' Characters",
+  baby: 'Baby Showers',
+  graduation: 'Graduations',
+  anniversary: 'Anniversaries & Love',
+  corporate: 'Corporate & Events',
+  holiday: 'Holidays & Seasons',
+  sculpted: 'Sculpted & Sugar Art',
+  cupcakes: 'Cupcakes & Treats',
+  other: 'Other',
+};
 
 const CAKE_SIZES = [
   { value: '', label: 'Select a size...' },
@@ -35,19 +50,54 @@ const initialFormState = {
 
 // Handles the cake ordering process, capturing customer details and sending them to the backend.
 export default function Order() {
-  const [searchParams] = useSearchParams();
-  const galleryRef = searchParams.get('gallery_ref');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const cakeId = searchParams.get('cake');
 
-  const [form, setForm] = useState({
-    ...initialFormState,
-    specialInstructions: galleryRef
-      ? `I'd like a cake similar to gallery image #${galleryRef}. `
-      : '',
-  });
+  const [form, setForm] = useState(initialFormState);
   const [inspirationImage, setInspirationImage] = useState(null);
+  const [design, setDesign] = useState(null);
+  const [designState, setDesignState] = useState({ loading: false, error: null });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState(null);
+
+  // Load the gallery design the customer picked on the gallery page.
+  useEffect(() => {
+    if (!cakeId) {
+      setDesign(null);
+      setDesignState({ loading: false, error: null });
+      return undefined;
+    }
+
+    let cancelled = false;
+    setDesign(null);
+    setDesignState({ loading: true, error: null });
+
+    fetchGalleryItem(cakeId)
+      .then((item) => {
+        if (cancelled) return;
+        setDesign(item);
+        setDesignState({ loading: false, error: null });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setDesign(null);
+        setDesignState({
+          loading: false,
+          error: err.message || 'That design is no longer available.',
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cakeId]);
+
+  function clearDesign() {
+    setDesign(null);
+    setDesignState({ loading: false, error: null });
+    if (cakeId) setSearchParams({}, { replace: true });
+  }
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -61,24 +111,32 @@ export default function Order() {
     e.preventDefault();
     setErrors({});
     setStatus(null);
+    if (cakeId && (designState.loading || !design || String(design.id) !== String(Number(cakeId)))) {
+      setStatus({ type: 'error', message: 'Wait for the selected design, or remove it before submitting.' });
+      return;
+    }
     setSubmitting(true);
 
     // Combine size + tiers into the cake_size field for the backend
     const combinedSize = `${form.cakeSize} — ${form.tiers} tier${form.tiers !== '1' ? 's' : ''}`;
 
     try {
-      const { ok, data } = await submitOrder({
+      const data = await submitOrder({
         ...form,
         cakeSize: form.cakeSize ? combinedSize : '',
         inspirationImage,
+        galleryItemId: design ? design.id : undefined,
       });
 
-      if (ok && data.success) {
+      if (data.success) {
+        const reference = data.order_reference || (data.order_id ? `#${data.order_id}` : null);
         setForm(initialFormState);
         setInspirationImage(null);
+        clearDesign();
         setStatus({
           type: 'success',
-          message: `${data.message} Your order reference is #${data.order_id}.`,
+          message: data.message || 'Order received!',
+          orderReference: reference,
           whatsappLink: data.whatsapp_link,
         });
 
@@ -89,12 +147,17 @@ export default function Order() {
         setErrors(data.errors || {});
         setStatus({ type: 'error', message: data.message || 'Please check the form and try again.' });
       }
-    } catch {
-      setStatus({
-        type: 'error',
-        message:
-          "Something went wrong reaching the server. Make sure your API is running.",
-      });
+    } catch (err) {
+      // The API attaches validation details to rejected requests; without them it was a connection problem.
+      if (err.data || err.errors) {
+        setErrors(err.errors || {});
+        setStatus({ type: 'error', message: err.message || 'Please check the form and try again.' });
+      } else {
+        setStatus({
+          type: 'error',
+          message: err.message || 'Something went wrong reaching the server. Make sure your API is running.',
+        });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -109,19 +172,69 @@ export default function Order() {
 
       <section className="section">
         <div className="container">
-          {galleryRef && (
-            <div className="form-note" style={{ maxWidth: 880, margin: '-20px auto 24px' }}>
-              ✨ You're ordering based on a cake from our gallery (Ref&nbsp;#{galleryRef}). Feel free to customise the details below!
-            </div>
-          )}
-
           <form className="order-card" onSubmit={handleSubmit} noValidate>
             <h2>Cake order details</h2>
             <hr className="form-divider" />
 
+            {designState.loading && (
+              <div className="order-design-loading">Fetching your selected design&hellip;</div>
+            )}
+
+            {!designState.loading && designState.error && (
+              <div className="order-design-alert">
+                {designState.error}{' '}
+                <Link to="/gallery">Browse the gallery</Link>{' '}
+                <button type="button" className="btn btn-outline" onClick={clearDesign}>Remove selection</button>
+              </div>
+            )}
+
+            {!designState.loading && design && (
+              <div className="order-design-card">
+                <GalleryMedia item={design} className="order-design-thumb" />
+                <div className="order-design-info">
+                  <span className="order-design-eyebrow">Selected design</span>
+                  <h3 className="order-design-title">{design.title || 'Signature cake'}</h3>
+                  <p className="order-design-meta">
+                    {CATEGORY_LABELS[design.category] || 'Gallery pick'}
+                    {design.description ? ` — ${design.description}` : ''}
+                  </p>
+                </div>
+                <div className="order-design-actions">
+                  <Link to="/gallery" className="order-design-change">Change</Link>
+                  <button
+                    type="button"
+                    className="order-design-remove"
+                    onClick={clearDesign}
+                    aria-label="Remove selected design"
+                  >
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {errors.gallery_item_id && (
+              <div className="order-design-alert" role="alert">
+                {errors.gallery_item_id}{' '}
+                <button type="button" className="btn btn-outline" onClick={clearDesign}>Remove selection</button>
+              </div>
+            )}
+
             {status && (
               <div className={`form-status visible ${status.type}`}>
                 {status.message}
+                {status.type === 'success' && status.orderReference && (
+                  <div className="order-ref-block">
+                    <span className="order-ref-label">Your order reference</span>
+                    <span className="order-ref-value">{status.orderReference}</span>
+                    <Link
+                      to={`/track?ref=${encodeURIComponent(status.orderReference)}`}
+                      className="order-ref-link"
+                    >
+                      Track your order &rarr;
+                    </Link>
+                  </div>
+                )}
                 {status.type === 'success' && status.whatsappLink && (
                   <a
                     href={status.whatsappLink}
@@ -273,7 +386,7 @@ export default function Order() {
               After submitting, you'll be redirected to WhatsApp to send your order details directly to our bakers. We'll reply there to confirm your order and discuss pricing!
             </div>
 
-            <button type="submit" className="btn btn-gradient btn-block" disabled={submitting}>
+            <button type="submit" className="btn btn-gradient btn-block" disabled={submitting || Boolean(cakeId && (designState.loading || !design))}>
               {submitting ? 'Submitting...' : 'Submit Order Request'}
             </button>
           </form>

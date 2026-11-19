@@ -1,9 +1,9 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from app.models.page import Page
 from app.models.navigation import MenuItem
 from app.models.footer import FooterColumn
 from app.models.settings import SiteSettings
-from app.models.gallery import GalleryItem
+from app.models.gallery import GalleryItem, CATEGORY_CHOICES
 
 # Provides read-only access to published content for regular website visitors.
 public_bp = Blueprint('public', __name__, url_prefix='/api/public')
@@ -36,8 +36,17 @@ def get_settings():
         return jsonify({})
     return jsonify(settings.to_dict())
 
-# Returns all images approved for the public gallery.
+# Returns all images in the public gallery, newest first.
+# Optional ?category=<key> limits the result to a single category.
 @public_bp.route('/gallery', methods=['GET'])
 def get_gallery():
-    items = GalleryItem.query.order_by(GalleryItem.created_at.desc()).all()
+    query = GalleryItem.query
+
+    category = (request.args.get('category') or '').strip().lower()
+    if category and category not in ('all', 'any'):
+        if category not in CATEGORY_CHOICES:
+            return jsonify({'error': f"Unknown category '{category}'"}), 400
+        query = query.filter(GalleryItem.category == category)
+
+    items = query.order_by(GalleryItem.created_at.desc(), GalleryItem.id.desc()).all()
     return jsonify([item.to_dict() for item in items])

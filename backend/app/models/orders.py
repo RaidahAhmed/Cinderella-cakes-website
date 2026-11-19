@@ -1,6 +1,16 @@
 # stores the order model
 from app.extensions import db # To get access to the database instance created in extensions.py, we import the db object from app.extensions.
 from datetime import datetime
+import secrets
+import string
+
+
+VALID_STATUSES = ['new', 'confirmed', 'baking', 'ready', 'out_for_delivery', 'delivered', 'cancelled']
+
+
+def generate_order_reference():
+    chars = string.ascii_uppercase + string.digits
+    return 'CC-' + ''.join(secrets.choice(chars) for _ in range(5))
 
 
 class Order(db.Model):  # Order class is a subclass inheriting from the base Model class
@@ -16,9 +26,14 @@ class Order(db.Model):  # Order class is a subclass inheriting from the base Mod
     special_instructions = db.Column(db.String(500), nullable=True)
     delivery_type = db.Column(db.String(20), nullable=False, default="pickup")  # pickup or delivery
     delivery_address = db.Column(db.String(250), nullable=True)  # required only when delivery_type is 'delivery'
-    status = db.Column(db.String(20), nullable=False, default="new")  # new, contacted, confirmed, completed, cancelled
+    status = db.Column(db.String(20), nullable=False, default="new")  # see VALID_STATUSES
+    order_reference = db.Column(db.String(10), unique=True, nullable=False, default=generate_order_reference)
+    gallery_item_id = db.Column(db.Integer, db.ForeignKey('gallery_items.id', ondelete='SET NULL'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, onupdate=datetime.now)
+
+    # optional link back to the gallery item that inspired this order
+    gallery_item = db.relationship('GalleryItem', backref='orders')
 
 #Constructor method for the Order class, which initializes an instance of the Order model with the provided attributes for a new order.
     def __init__(self, full_name, phone_number, event_type, event_date, flavor, cake_size,
@@ -53,5 +68,9 @@ class Order(db.Model):  # Order class is a subclass inheriting from the base Mod
             "delivery_type": self.delivery_type,
             "delivery_address": self.delivery_address,
             "status": self.status,
+            "order_reference": self.order_reference,
+            "gallery_item_id": self.gallery_item_id,
+            "gallery_item": self.gallery_item.to_dict() if self.gallery_item else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

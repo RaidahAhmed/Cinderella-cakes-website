@@ -8,7 +8,6 @@ export default function Settings() {
     contact_email: '',
     contact_phone: '',
     address: '',
-    business_hours: '',
     logo_url: ''
   });
   const [loading, setLoading] = useState(true);
@@ -37,7 +36,6 @@ export default function Settings() {
           contact_email: data.contact_email || '',
           contact_phone: data.contact_phone || '',
           address: data.address || '',
-          business_hours: data.business_hours || '',
           logo_url: data.logo_url || ''
         });
       }
@@ -63,7 +61,7 @@ export default function Settings() {
       await updateAdminSettings(settings);
       setMessage({ type: 'success', text: 'Settings updated successfully!' });
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to update settings.' });
+      setMessage({ type: 'error', text: err.message || 'Failed to update settings.' });
     } finally {
       setSaving(false);
     }
@@ -92,7 +90,7 @@ export default function Settings() {
         setPwMessage({ type: 'error', text: res.message || 'Failed to change password.' });
       }
     } catch (err) {
-      setPwMessage({ type: 'error', text: 'Failed to change password.' });
+      setPwMessage({ type: 'error', text: err.message || 'Failed to change password.' });
     } finally {
       setPwSaving(false);
     }
@@ -160,16 +158,6 @@ export default function Settings() {
             <textarea
               name="address"
               value={settings.address}
-              onChange={handleChange}
-              className="admin-input"
-              style={{ width: '100%', minHeight: '80px' }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Business Hours</label>
-            <textarea
-              name="business_hours"
-              value={settings.business_hours}
               onChange={handleChange}
               className="admin-input"
               style={{ width: '100%', minHeight: '80px' }}

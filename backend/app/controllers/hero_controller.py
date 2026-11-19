@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.extensions import db
 from app.models.hero import HeroSection
-from app.models.page import Page
 from app.utils.decorators import permission_required
 
 # Manages the large banner (hero) sections typically found at the top of pages.

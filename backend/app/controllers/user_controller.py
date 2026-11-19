@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.extensions import db
-from app.models.rbac import User, Role
+from app.models.rbac import User
 from app.utils.decorators import role_required
 
 # Manages admin user accounts and their assigned roles.

@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { fetchReviews } from '../lib/api';
 import heroImg from '../assets/c-cakes-images/home-pg-hero.png';
 import storefrontImg from '../assets/c-cakes-images/visit-bakery.png';
 import deliveryImg from '../assets/c-cakes-images/delivery.png';
@@ -8,6 +10,25 @@ import phoneIcon from '../assets/icons/phone-call.png';
 
 // Displays the main landing page containing the hero section, value propositions, and bakery location.
 export default function Home() {
+  const [testimonials, setTestimonials] = useState([]);
+
+  // Pull the three most recent approved reviews for the testimonial strip.
+  useEffect(() => {
+    let active = true;
+
+    fetchReviews()
+      .then((data) => {
+        if (active) setTestimonials((data.reviews || []).slice(0, 3));
+      })
+      .catch(() => {
+        // Testimonials are a nice-to-have, so stay quiet if the API is unreachable.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <>
       <section className="hero" style={{ backgroundImage: `url(${heroImg})` }}>
@@ -97,6 +118,56 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {testimonials.length > 0 && (
+        <section className="section testimonials-section">
+          <div className="container">
+            <div className="section-heading">
+              <span className="eyebrow">Testimonials</span>
+              <h2>What Our Customers Say</h2>
+              <p>Kind words from the celebrations we have had the joy of baking for.</p>
+            </div>
+
+            <div className="testimonial-grid">
+              {testimonials.map((review) => (
+                <article key={review.id} className="testimonial-card">
+                  <span className="review-quote-mark" aria-hidden="true">&ldquo;</span>
+                  <Stars value={review.rating} />
+                  <p className="testimonial-text">{snippet(review.review_text)}</p>
+                  <span className="testimonial-name">{review.customer_name}</span>
+                </article>
+              ))}
+            </div>
+
+            <div className="testimonial-actions">
+              <Link to="/reviews" className="btn btn-outline">
+                See All Reviews
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
+}
+
+// Five star row shared by the testimonial cards.
+function Stars({ value }) {
+  const filled = Math.round(Number(value) || 0);
+  return (
+    <span className="stars" aria-label={`${filled} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span key={star} className={`star${star <= filled ? ' filled' : ''}`} aria-hidden="true">
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// Trims a review down to a short teaser for the home page cards.
+function snippet(text, limit = 180) {
+  const value = (text || '').trim();
+  if (value.length <= limit) return value;
+  return `${value.slice(0, limit).trimEnd()}…`;
 }

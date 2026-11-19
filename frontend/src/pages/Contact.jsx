@@ -38,7 +38,7 @@ export default function Contact() {
             <div className="contact-method">
               <img src={emailIcon} alt="Email" className="contact-icon" />
               <div>
-                <h4>cinderellacakes@gmail.com</h4>
+                <h4>cinderellacakes2@gmail.com</h4>
                 <p>Replies within 24 hours</p>
               </div>
             </div>

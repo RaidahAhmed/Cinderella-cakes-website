@@ -4,10 +4,13 @@ import uuid #Generating unique filenames for uploaded images
 from datetime import datetime, date
 
 from flask import Blueprint, request, jsonify, current_app
+from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename #Protect server from malicious file uploads
 
 from app.extensions import db
-from app.models.orders import Order
+from app.models.orders import Order, VALID_STATUSES, generate_order_reference
+from app.models.order_tracking import OrderStatusHistory
+from app.models.gallery import GalleryItem
 from app.utils.notifications import send_order_email, build_whatsapp_link, build_baker_to_customer_whatsapp_link
 from app.status_codes import (
     HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST,
@@ -23,6 +26,41 @@ ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 #Checks if the uploaded file has an allowed extension
 def _allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[-1].lower() in ALLOWED_IMAGE_EXTENSIONS
+
+#Generates a short public reference that is not yet used by another order.
+def _generate_unique_reference():
+    for _ in range(10):
+        reference = generate_order_reference()
+        if not Order.query.filter_by(order_reference=reference).first():
+            return reference
+    raise RuntimeError('Unable to allocate a unique order reference.')
+
+
+def _is_reference_collision(error):
+    """Only retry the reference's unique constraint, not unrelated failures."""
+    message = str(error.orig).lower()
+    sqlite_unique = getattr(error.orig, 'sqlite_errorname', '') == 'SQLITE_CONSTRAINT_UNIQUE'
+    mysql_unique = getattr(error.orig, 'args', (None,))[0] == 1062
+    return (sqlite_unique or mysql_unique) and 'order_reference' in message
+
+
+#Parses the optional gallery_item_id sent with an order.
+#Returns (gallery_item_id, error).
+def _parse_gallery_item_id(raw_value):
+    if raw_value is None or str(raw_value).strip() == '':
+        return None, None
+
+    value = str(raw_value).strip()
+    if not re.fullmatch(r'[0-9]{1,10}', value):
+        return None, 'The selected inspiration image is invalid.'
+    gallery_item_id = int(value)
+    if not 1 <= gallery_item_id <= 2147483647:
+        return None, 'The selected inspiration image is invalid.'
+
+    if not GalleryItem.query.get(gallery_item_id):
+        return None, 'The selected inspiration image is no longer available.'
+
+    return gallery_item_id, None
 
 # Checks every required field is present.Returns (cleaned_data, errors_by_field). errors_by_field is empty when valid.
 def _validate_order_input(form):
@@ -109,22 +147,44 @@ def create_order():
             if upload_error:
                 return jsonify({"success": False, "message": upload_error}), HTTP_400_BAD_REQUEST
 
-#Takes cleaned data and creates a new Order object, saves it to the database.
-        new_order = Order(
-            full_name=cleaned['full_name'],
-            phone_number=cleaned['phone_number'],
-            event_type=cleaned['event_type'],
-            event_date=cleaned['event_date'],
-            flavor=cleaned['flavor'],
-            cake_size=cleaned['cake_size'],
-            special_instructions=cleaned['special_instructions'],
-            inspiration_image=inspiration_filename,
-            delivery_type=cleaned['delivery_type'],
-            delivery_address=cleaned['delivery_address'],
-        )
+        gallery_item_id, gallery_error = _parse_gallery_item_id(request.form.get('gallery_item_id'))
+        if gallery_error:
+            return jsonify({"success": False, "message": gallery_error}), HTTP_400_BAD_REQUEST
 
-        db.session.add(new_order)
-        db.session.commit()
+#Takes cleaned data and creates a new Order object, saves it to the database.
+        for attempt in range(5):
+            new_order = Order(
+                full_name=cleaned['full_name'],
+                phone_number=cleaned['phone_number'],
+                event_type=cleaned['event_type'],
+                event_date=cleaned['event_date'],
+                flavor=cleaned['flavor'],
+                cake_size=cleaned['cake_size'],
+                special_instructions=cleaned['special_instructions'],
+                inspiration_image=inspiration_filename,
+                delivery_type=cleaned['delivery_type'],
+                delivery_address=cleaned['delivery_address'],
+            )
+
+            # Public reference the customer uses to track the order later on.
+            new_order.order_reference = _generate_unique_reference()
+            new_order.gallery_item_id = gallery_item_id
+            try:
+                db.session.add(new_order)
+                db.session.flush()
+
+                # First entry of the order timeline shown on the tracking page.
+                db.session.add(OrderStatusHistory(
+                    order_id=new_order.id,
+                    status=new_order.status or 'new',
+                    note='Order received by the bakery.'
+                ))
+                db.session.commit()
+                break
+            except IntegrityError as error:
+                db.session.rollback()
+                if attempt == 4 or not _is_reference_collision(error):
+                    raise
 
         #Send notifications: email (if enabled) and WhatsApp links
         send_order_email(current_app, new_order)
@@ -135,13 +195,16 @@ def create_order():
             "success": True,
             "message": "Order received! Tap the button below to send your order details to the baker via WhatsApp.",
             "order_id": new_order.id,
+            "order_reference": new_order.order_reference,
+            "order": new_order.to_dict(),
             "whatsapp_link": whatsapp_link,
             "baker_whatsapp_link": baker_whatsapp_link,
         }), HTTP_201_CREATED
 
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
+        current_app.logger.exception('Order operation failed')
+        return jsonify({"success": False, "message": "We could not process this order. Please try again."}), HTTP_500_INTERNAL_SERVER_ERROR
 
 
 # getting all orders - this route retrieves all orders from the database and returns them in a JSON response.
@@ -155,8 +218,10 @@ def get_all_orders():
             "total": len(all_orders),
             "orders": [o.to_dict() for o in all_orders],
         }), HTTP_200_OK
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Order lookup failed')
+        return jsonify({"success": False, "message": "We could not load orders. Please try again."}), HTTP_500_INTERNAL_SERVER_ERROR
 
 
 # get a single order by id - this route retrieves a specific order based on the provided order ID. If the order is found, it returns the order details; otherwise, it returns a 404 error.
@@ -169,11 +234,20 @@ def get_order_by_id(order_id):
         if not order:
             return jsonify({"success": False, "message": "Order not found"}), HTTP_404_NOT_FOUND
 
-        return jsonify({"success": True, "order": order.to_dict()}), HTTP_200_OK
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
+        order_data = order.to_dict()
+
+        # Include the gallery item that inspired the order, when there is one.
+        order_data['gallery_item'] = order.gallery_item.to_dict() if order.gallery_item else None
+        order_data['status_history'] = [entry.to_dict() for entry in order.status_history]
+
+        return jsonify({"success": True, "order": order_data}), HTTP_200_OK
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Order lookup failed')
+        return jsonify({"success": False, "message": "We could not load orders. Please try again."}), HTTP_500_INTERNAL_SERVER_ERROR
 
 # update_order_status - changes the progress status of a specific order (e.g., pending -> completed). Requires 'orders_write' permission.
+# Every valid change is appended to the order's status history so customers can follow it.
 @orders.route('/<int:order_id>/status', methods=['PATCH'])
 @permission_required('orders_write')
 def update_order_status(order_id):
@@ -183,12 +257,46 @@ def update_order_status(order_id):
             return jsonify({"success": False, "message": "Order not found"}), HTTP_404_NOT_FOUND
             
         data = request.get_json(silent=True)
-        if data is None:
-            return jsonify({'message': 'Request body must be valid JSON with Content-Type: application/json'}), 400
-        if 'status' in data:
-            order.status = data['status']
-            db.session.commit()
+        if not isinstance(data, dict):
+            return jsonify({'success': False, 'message': 'Request body must be a JSON object with Content-Type: application/json'}), HTTP_400_BAD_REQUEST
+
+        raw_status = data.get('status')
+        if not isinstance(raw_status, str):
+            return jsonify({"success": False, "message": "Status is required"}), HTTP_400_BAD_REQUEST
+
+        new_status = str(raw_status).strip().lower()
+        if new_status not in VALID_STATUSES:
+            return jsonify({
+                "success": False,
+                "message": f"Invalid status. Allowed values: {', '.join(VALID_STATUSES)}"
+            }), HTTP_400_BAD_REQUEST
+
+        raw_note = data.get('note')
+        if raw_note is not None and not isinstance(raw_note, str):
+            return jsonify({"success": False, "message": "Note must be text"}), HTTP_400_BAD_REQUEST
+        note = (raw_note or '').strip() or None
+        if note and len(note) > 500:
+            return jsonify({"success": False, "message": "Note must be 500 characters or fewer"}), HTTP_400_BAD_REQUEST
+
+        if order.status != new_status:
+            order.status = new_status
+            db.session.add(OrderStatusHistory(
+                order_id=order.id,
+                status=new_status,
+                note=note
+            ))
+        elif note:
+            # Same status but a fresh update message - still useful on the timeline.
+            db.session.add(OrderStatusHistory(
+                order_id=order.id,
+                status=new_status,
+                note=note
+            ))
+
+        db.session.commit()
             
         return jsonify({"success": True, "order": order.to_dict()}), HTTP_200_OK
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), HTTP_500_INTERNAL_SERVER_ERROR
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Order operation failed')
+        return jsonify({"success": False, "message": "We could not process this order. Please try again."}), HTTP_500_INTERNAL_SERVER_ERROR

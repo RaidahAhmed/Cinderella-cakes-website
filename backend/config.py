@@ -1,6 +1,11 @@
 import os
 from datetime import timedelta
 
+from dotenv import load_dotenv
+
+# Load environment variables from the .env file before any config is read.
+load_dotenv()
+
 class Config:
     # Basic Config
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
@@ -15,7 +20,12 @@ class Config:
     
     # Uploads
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'uploads', 'inspiration')
+    UPLOAD_FOLDER = os.path.abspath(os.path.join(
+        BASE_DIR, os.environ.get('UPLOAD_FOLDER') or os.path.join('app', 'static', 'uploads', 'inspiration')
+    ))
+    GALLERY_SOURCE_DIR = os.environ.get('GALLERY_SOURCE_DIR') or os.path.join(
+        BASE_DIR, '..', 'frontend', 'src', 'assets', 'gallery'
+    )
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB
     
     # CORS
@@ -28,7 +38,7 @@ class Config:
     SMTP_USERNAME = 'your_email@gmail.com'
     SMTP_PASSWORD = 'your_app_password'
     SMTP_FROM_EMAIL = 'your_email@gmail.com'
-    BAKERY_NOTIFY_EMAIL = 'cinderellacakes@gmail.com'
+    BAKERY_NOTIFY_EMAIL = 'cinderellacakes2@gmail.com'
 
     # --- WhatsApp ---
     BAKERY_WHATSAPP_NUMBER = '256781470984'

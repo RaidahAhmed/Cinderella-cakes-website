@@ -4,7 +4,7 @@ from app.models.settings import SiteSettings
 from app.utils.decorators import role_required
 
 # Manages global configuration for the website like branding and contact info.
-settings_bp = Blueprint('settings', __name__, url_prefix='/api/settings')
+settings_bp = Blueprint('settings', __name__, url_prefix='/api/v1/settings')
 
 # Retrieves the current site settings, creating default ones if none exist.
 @settings_bp.route('/', methods=['GET'])

@@ -1,40 +1,99 @@
-import { useEffect, useState } from 'react';
-import { fetchOrders, updateOrderStatus, BASE_URL } from '../../lib/api';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchOrders, fetchGallery, updateOrderStatus, resolveMediaUrl } from '../../lib/api';
+import GalleryMedia from '../../components/GalleryMedia';
 import '../../styles/admin.css';
+
+// Standardised order lifecycle used across the public tracking page and admin.
+const STATUS_OPTIONS = [
+  { value: 'new', label: 'New' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'baking', label: 'Baking' },
+  { value: 'ready', label: 'Ready' },
+  { value: 'out_for_delivery', label: 'Out for Delivery' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+const STATUS_FILTERS = [{ value: 'all', label: 'All statuses' }, ...STATUS_OPTIONS];
+
+function formatDate(value) {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString();
+}
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
+  const [galleryById, setGalleryById] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     loadOrders();
   }, []);
 
-  const loadOrders = async () => {
+  async function loadOrders() {
+    setLoading(true);
+    setError(null);
+
     try {
       const data = await fetchOrders();
-      if (data.orders) {
-        setOrders(data.orders);
-      }
+      setOrders(data.orders || []);
     } catch (err) {
-      setError('Failed to load orders.');
+      setError(err.message || 'Failed to load orders.');
     } finally {
       setLoading(false);
     }
-  };
 
-  const handleStatusChange = async (orderId, newStatus) => {
+    // Design thumbnails come from the gallery list; failures must not hide orders.
+    try {
+      const items = await fetchGallery();
+      setGalleryById(
+        items.reduce((map, item) => {
+          map[item.id] = item;
+          return map;
+        }, {}),
+      );
+    } catch {
+      setGalleryById({});
+    }
+  }
+
+  async function handleStatusChange(orderId, newStatus) {
+    setUpdatingId(orderId);
+    const previousStatus = orders.find((order) => order.id === orderId)?.status;
+
+    // Optimistically update local state
+    setOrders((prev) =>
+      prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)),
+    );
+
     try {
       await updateOrderStatus(orderId, newStatus);
-      // Optimistically update local state
-      setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, status: newStatus } : order
-      ));
     } catch (err) {
-      alert('Failed to update order status');
+      setOrders((prev) =>
+        prev.map((order) => (order.id === orderId ? { ...order, status: previousStatus } : order)),
+      );
+      alert(err.message || 'Failed to update order status');
+    } finally {
+      setUpdatingId(null);
     }
-  };
+  }
+
+  // The order list only carries gallery_item_id, so the gallery list fills in
+  // the picture and title (the detail endpoint also returns gallery_item).
+  function designFor(order) {
+    if (order.gallery_item) return order.gallery_item;
+    if (order.gallery_item_id) return galleryById[order.gallery_item_id] || null;
+    return null;
+  }
+
+  const visibleOrders = useMemo(
+    () => (statusFilter === 'all' ? orders : orders.filter((order) => order.status === statusFilter)),
+    [orders, statusFilter],
+  );
 
   if (loading) return <div>Loading orders...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -43,70 +102,115 @@ export default function Orders() {
     <div className="admin-page">
       <div className="admin-header">
         <h1>Order Management</h1>
+        <label className="admin-gallery-filter">
+          <span>Status</span>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="admin-input"
+          >
+            {STATUS_FILTERS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="admin-card">
         <div className="admin-table-wrap">
-          <table className="admin-table">
+          <table className="admin-table admin-orders-table">
             <thead>
               <tr>
-                <th>ID</th>
+                <th>Reference</th>
                 <th>Customer</th>
-                <th>Event Date</th>
-                <th>Event Type</th>
-                <th>Cake Size</th>
+                <th>Event</th>
+                <th>Cake</th>
                 <th>Delivery</th>
+                <th>Design</th>
+                <th>Notes</th>
                 <th>Status</th>
-                <th>Inspiration</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map(order => (
-                <tr key={order.id}>
-                  <td>#{order.id}</td>
-                  <td>
-                    <strong>{order.full_name}</strong>
-                    <br/>
-                    <small>{order.phone_number}</small>
-                  </td>
-                  <td>{new Date(order.event_date).toLocaleDateString()}</td>
-                  <td>{order.event_type}</td>
-                  <td>{order.cake_size}</td>
-                  <td>
-                    {order.delivery_type}
-                    {order.delivery_address && (
-                      <div style={{fontSize: '0.8rem', color: '#666', marginTop: '4px'}}>
-                        {order.delivery_address}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <select 
-                      value={order.status}
-                      onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                      className={`status-select status-${order.status}`}
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </td>
-                  <td>
-                    {order.inspiration_image ? (
-                      <a href={`${BASE_URL}/static/uploads/inspiration/${order.inspiration_image}`} target="_blank" rel="noopener noreferrer">
-                        View Image
-                      </a>
-                    ) : (
-                      <span style={{ color: '#999' }}>None</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {orders.length === 0 && (
+              {visibleOrders.map((order) => {
+                const design = designFor(order);
+
+                return (
+                  <tr key={order.id}>
+                    <td>
+                      <span className="admin-order-ref">{order.order_reference || `#${order.id}`}</span>
+                      <div className="admin-cell-sub">#{order.id}</div>
+                    </td>
+                    <td>
+                      <strong>{order.full_name}</strong>
+                      <div className="admin-cell-sub">{order.phone_number}</div>
+                    </td>
+                    <td>
+                      {formatDate(order.event_date)}
+                      <div className="admin-cell-sub">{order.event_type}</div>
+                    </td>
+                    <td>
+                      {order.cake_size || '—'}
+                      <div className="admin-cell-sub">{order.flavor || 'No flavor set'}</div>
+                    </td>
+                    <td>
+                      <span className="admin-delivery-tag">{order.delivery_type}</span>
+                      {order.delivery_address && (
+                        <div className="admin-cell-sub">{order.delivery_address}</div>
+                      )}
+                    </td>
+                    <td>
+                      {design ? (
+                        <div className="admin-design-cell">
+                          <GalleryMedia item={design} className="admin-design-thumb" />
+                          <span className="admin-design-title">{design.title || 'Gallery design'}</span>
+                        </div>
+                      ) : order.inspiration_image ? (
+                        <a
+                          href={resolveMediaUrl(order.inspiration_image)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View upload
+                        </a>
+                      ) : (
+                        <span className="admin-cell-muted">None</span>
+                      )}
+                    </td>
+                    <td>
+                      {order.special_instructions ? (
+                        <span className="admin-note-cell" title={order.special_instructions}>
+                          {order.special_instructions}
+                        </span>
+                      ) : (
+                        <span className="admin-cell-muted">—</span>
+                      )}
+                    </td>
+                    <td>
+                      <select
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        className={`status-select status-${order.status}`}
+                        disabled={updatingId === order.id}
+                        aria-label={`Status for order ${order.order_reference || order.id}`}
+                      >
+                        {STATUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
+              {visibleOrders.length === 0 && (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center' }}>No orders found.</td>
+                  <td colSpan="8" style={{ textAlign: 'center' }}>
+                    No orders found.
+                  </td>
                 </tr>
               )}
             </tbody>

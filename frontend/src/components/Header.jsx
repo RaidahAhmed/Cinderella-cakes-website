@@ -60,6 +60,12 @@ export default function Header() {
           <NavLink to="/order" className={linkClass} onClick={closeMenu}>
             Order
           </NavLink>
+          <NavLink to="/track" className={linkClass} onClick={closeMenu}>
+            Track Order
+          </NavLink>
+          <NavLink to="/reviews" className={linkClass} onClick={closeMenu}>
+            Reviews
+          </NavLink>
           <NavLink to="/contact" className={linkClass} onClick={closeMenu}>
             Contact
           </NavLink>

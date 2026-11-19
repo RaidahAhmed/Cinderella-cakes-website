@@ -26,8 +26,8 @@ export default function Login() {
         setError(res.message || 'Login failed');
       }
     } catch (err) {
-      // Show a general error if the server cannot be reached.
-      setError('Connection error');
+      // The API throws with the server's own message, or fails if it cannot be reached.
+      setError(err.message || 'Connection error');
     }
   };
 

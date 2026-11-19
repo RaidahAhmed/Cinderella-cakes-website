@@ -1,11 +1,10 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
-from datetime import datetime, timedelta, timezone
 
 from app.extensions import db
 from app.models.rbac import User
 from app.status_codes import (
-    HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST,
+    HTTP_200_OK, HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR,
 )
 

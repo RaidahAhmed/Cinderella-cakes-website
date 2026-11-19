@@ -1,5 +1,6 @@
 import os
-from flask import Flask, jsonify
+from pathlib import Path
+from flask import Flask, abort, jsonify, send_from_directory
 from config import config_by_name
 
 # Import extensions
@@ -51,7 +52,23 @@ def create_app(env_name="development"):
         return jsonify({'status': 'ok'}), 200
 
     # Create upload directory if it doesn't exist
-    upload_path = os.path.join(app.root_path, 'static', 'uploads', 'inspiration')
+    upload_path = app.config['UPLOAD_FOLDER']
     os.makedirs(upload_path, exist_ok=True)
+
+    def serve_media(directory, filename):
+        root = Path(directory).resolve()
+        if not (root / filename).resolve().is_relative_to(root):
+            abort(404)
+        return send_from_directory(root, filename, conditional=True)
+
+    # Explicit routes also serve persistent storage outside Flask's static tree.
+    # Old customer uploads and imported gallery basenames stay at their original URLs.
+    @app.route('/static/uploads/inspiration/<path:filename>')
+    def inspiration_media(filename):
+        return serve_media(app.config['UPLOAD_FOLDER'], filename)
+
+    @app.route('/static/uploads/gallery/<path:filename>')
+    def gallery_media(filename):
+        return serve_media(Path(app.config['UPLOAD_FOLDER']) / 'gallery', filename)
 
     return app

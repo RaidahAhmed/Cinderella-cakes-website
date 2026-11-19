@@ -1,6 +1,28 @@
-export const API_BASE_URL = 'https://cinderella-cakes-website.onrender.com/api/v1';
-export const API_PUBLIC_URL = 'https://cinderella-cakes-website.onrender.com/api/public';
-export const BASE_URL = 'https://cinderella-cakes-website.onrender.com';
+// Configurable API origin. Set VITE_API_URL in a .env file (for example
+// VITE_API_URL=http://localhost:5000 or your deployed backend URL).
+// When it is left empty the app talks to the same origin that served it.
+const API_BASE = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+
+// Origin used to build absolute links to uploaded media (images live outside /api).
+export const BASE_URL = API_BASE;
+
+export function resolveMediaUrl(value) {
+  if (!value) return '';
+  if (/^(https?:)?\/\//i.test(value)) return value;
+  const path = value.replace(/\\/g, '/').replace(/^\/+/, '');
+  const local = path.startsWith('static/') ? `/${path}`
+    : path.startsWith('gallery/') ? `/static/uploads/${path}`
+      : `/static/uploads/inspiration/${path}`;
+  return `${BASE_URL}${local}`;
+}
+
+export function isVideoMedia(item) {
+  return item?.media_type === 'video' || /\.mp4(?:[?#]|$)/i.test(item?.image_url || '');
+}
+
+const API_URL = `${API_BASE}/api/v1`;
+const PUBLIC_URL = `${API_BASE}/api/public`;
+const CONTENT_URL = `${API_BASE}/api`;
 
 // Retrieves the saved login token to securely identify the user for protected actions.
 function getAuthHeaders() {
@@ -8,43 +30,62 @@ function getAuthHeaders() {
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
+// Builds an Error carrying the server's own message so callers can surface it.
+async function buildError(res, fallbackMessage) {
+  const error = new Error(fallbackMessage);
+  error.status = res.status;
+  try {
+    const data = await res.json();
+    error.data = data;
+    error.errors = data.errors;
+    error.message = data.message || data.error || fallbackMessage;
+  } catch {
+    // Response body was empty or not JSON - keep the fallback message.
+  }
+  return error;
+}
+
 // ========================
 // PUBLIC API
 // ========================
 
-// Fetches global site configuration like store name and contact details.
-export async function fetchSiteSettings() {
-  const res = await fetch(`${API_PUBLIC_URL}/settings`);
-  if (!res.ok) return null;
-  return res.json();
-}
-
-// Retrieves the menu links for the website's top navigation bar.
-export async function fetchNavigation() {
-  const res = await fetch(`${API_PUBLIC_URL}/navigation`);
-  if (!res.ok) return [];
-  return res.json();
-}
-
-// Retrieves the content and links for the website's bottom footer area.
-export async function fetchFooter() {
-  const res = await fetch(`${API_PUBLIC_URL}/footer`);
-  if (!res.ok) return null;
-  return res.json();
-}
-
-// Fetches the content for a specific page based on its URL address (slug).
-export async function fetchPage(slug) {
-  const res = await fetch(`${API_PUBLIC_URL}/pages/${slug}`);
-  if (!res.ok) return null;
-  return res.json();
+// Normalises the different gallery payloads the API can return into a plain list.
+function normaliseGalleryItems(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload) return [];
+  return payload.items || payload.gallery_items || [];
 }
 
 // Retrieves the images and details for the public photo gallery.
-export async function fetchGallery() {
-  const res = await fetch(`${API_PUBLIC_URL}/gallery`);
-  if (!res.ok) return [];
-  return res.json();
+// An optional category key (e.g. 'wedding') narrows the list to that category.
+export async function fetchGallery(category) {
+  const filter = category && category !== 'all' ? `?category=${encodeURIComponent(category)}` : '';
+  const res = await fetch(`${API_URL}/gallery${filter}`);
+  if (!res.ok) throw await buildError(res, 'Failed to fetch gallery');
+  return normaliseGalleryItems(await res.json());
+}
+
+// Retrieves every gallery category with the number of items it holds.
+// Resolves to [{ key, label, count }, ...].
+export async function fetchGalleryCategories() {
+  const res = await fetch(`${API_URL}/gallery/categories`);
+  if (!res.ok) throw await buildError(res, 'Failed to fetch categories');
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.categories || [];
+}
+
+// Retrieves a single gallery item by id (the list endpoint is the public source of truth).
+export async function fetchGalleryItem(id) {
+  const value = String(id).trim();
+  const itemId = Number(value);
+  if (!/^[0-9]{1,10}$/.test(value) || itemId < 1 || itemId > 2147483647) {
+    throw new Error('That gallery design could not be found.');
+  }
+
+  const items = await fetchGallery();
+  const item = items.find((entry) => entry.id === itemId);
+  if (!item) throw new Error('That gallery design is no longer available.');
+  return item;
 }
 
 // ========================
@@ -63,6 +104,7 @@ export async function submitOrder(orderData) {
     cakeSize: 'cake_size',
     inspirationImage: 'inspiration_image',
     specialInstructions: 'special_instructions',
+    galleryItemId: 'gallery_item_id',
     deliveryType: 'delivery_type',
     deliveryAddress: 'delivery_address'
   };
@@ -75,30 +117,31 @@ export async function submitOrder(orderData) {
     }
   });
 
-  const res = await fetch(`${API_BASE_URL}/orders/create`, {
+  const res = await fetch(`${API_URL}/orders/create`, {
     method: 'POST',
     body: formData,
   });
-  const data = await res.json();
-  return { ok: res.ok, data };
+  if (!res.ok) throw await buildError(res, 'Could not submit your order. Please try again.');
+  return res.json();
 }
 
 // Retrieves all orders for the admin dashboard. Requires the user to be logged in.
 export async function fetchOrders() {
-  const res = await fetch(`${API_BASE_URL}/orders`, {
+  const res = await fetch(`${API_URL}/orders`, {
     headers: getAuthHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to fetch orders');
+  if (!res.ok) throw await buildError(res, 'Failed to fetch orders');
   return res.json();
 }
 
-// Updates the progress status of a specific order (e.g., from 'pending' to 'completed').
+// Updates the progress status of a specific order (e.g., from 'new' to 'ready').
 export async function updateOrderStatus(id, status) {
-  const res = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
+  const res = await fetch(`${API_URL}/orders/${id}/status`, {
     method: 'PATCH',
     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   });
+  if (!res.ok) throw await buildError(res, 'Failed to update order status');
   return res.json();
 }
 
@@ -108,20 +151,21 @@ export async function updateOrderStatus(id, status) {
 
 // Checks credentials and logs an admin user into the system.
 export async function login(email, password) {
-  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+  const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
+  if (!res.ok) throw await buildError(res, 'Login failed');
   return res.json();
 }
 
 // Verifies the current user's session and retrieves their profile details.
 export async function getMe() {
-  const res = await fetch(`${API_BASE_URL}/auth/me`, {
+  const res = await fetch(`${API_URL}/auth/me`, {
     headers: getAuthHeaders(),
   });
-  if (!res.ok) throw new Error('Not authenticated');
+  if (!res.ok) throw await buildError(res, 'Not authenticated');
   return res.json();
 }
 
@@ -131,20 +175,21 @@ export async function getMe() {
 
 // Retrieves site settings for admin editing. Requires login.
 export async function fetchAdminSettings() {
-  const res = await fetch(`${API_BASE_URL}/settings/`, {
+  const res = await fetch(`${API_URL}/settings/`, {
     headers: getAuthHeaders(),
   });
-  if (!res.ok) throw new Error('Failed to fetch settings');
+  if (!res.ok) throw await buildError(res, 'Failed to fetch settings');
   return res.json();
 }
 
 // Updates site settings. Requires login.
 export async function updateAdminSettings(settingsData) {
-  const res = await fetch(`${API_BASE_URL}/settings/`, {
+  const res = await fetch(`${API_URL}/settings/`, {
     method: 'PUT',
     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(settingsData),
   });
+  if (!res.ok) throw await buildError(res, 'Failed to update settings');
   return res.json();
 }
 
@@ -152,22 +197,35 @@ export async function updateAdminSettings(settingsData) {
 // ADMIN API (GALLERY)
 // ========================
 
+// Updates the editable details of a gallery item (title, description, category). Requires login.
+export async function updateGalleryItem(id, data) {
+  const res = await fetch(`${API_URL}/gallery/${id}`, {
+    method: 'PUT',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw await buildError(res, 'Failed to update gallery item');
+  return res.json();
+}
+
 // Uploads a new image and its details to the photo gallery. Requires login.
 export async function uploadGalleryItem(formData) {
-  const res = await fetch(`${API_BASE_URL}/gallery/create`, {
+  const res = await fetch(`${API_URL}/gallery/create`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: formData,
   });
+  if (!res.ok) throw await buildError(res, 'Failed to upload image');
   return res.json();
 }
 
 // Removes an image from the photo gallery. Requires login.
 export async function deleteGalleryItem(id) {
-  const res = await fetch(`${API_BASE_URL}/gallery/${id}`, {
+  const res = await fetch(`${API_URL}/gallery/${id}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
+  if (!res.ok) throw await buildError(res, 'Failed to delete image');
   return res.json();
 }
 
@@ -177,11 +235,12 @@ export async function deleteGalleryItem(id) {
 
 // Changes the logged-in user's password.
 export async function changePassword(currentPassword, newPassword) {
-  const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+  const res = await fetch(`${API_URL}/auth/change-password`, {
     method: 'POST',
     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
   });
+  if (!res.ok) throw await buildError(res, 'Failed to change password');
   return res.json();
 }
 
@@ -189,48 +248,115 @@ export async function changePassword(currentPassword, newPassword) {
 // ADMIN API (CONTENT EDITING)
 // ========================
 
-// Fetches all pages for admin content management.
-export async function fetchPages() {
-  const res = await fetch('http://localhost:5000/api/pages/', {
-    headers: getAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to fetch pages');
-  return res.json();
-}
-
 // Updates a content section's text fields.
 export async function updateContentSection(id, data) {
-  const res = await fetch(`http://localhost:5000/api/content/sections/${id}`, {
+  const res = await fetch(`${CONTENT_URL}/content/sections/${id}`, {
     method: 'PUT',
     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+  if (!res.ok) throw await buildError(res, 'Failed to update section');
   return res.json();
 }
 
 // Updates a content block's text fields.
 export async function updateContentBlock(id, data) {
-  const res = await fetch(`http://localhost:5000/api/content/blocks/${id}`, {
+  const res = await fetch(`${CONTENT_URL}/content/blocks/${id}`, {
     method: 'PUT',
     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+  if (!res.ok) throw await buildError(res, 'Failed to update content block');
   return res.json();
 }
 
 // Updates a hero section's text fields.
 export async function updateHeroSection(id, data) {
-  const res = await fetch(`http://localhost:5000/api/heroes/${id}`, {
+  const res = await fetch(`${CONTENT_URL}/heroes/${id}`, {
     method: 'PUT',
     headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+  if (!res.ok) throw await buildError(res, 'Failed to update hero section');
   return res.json();
 }
 
-// Fetches full page data with content for a given slug.
+// Fetches full page data (hero + sections + blocks) for a given slug.
 export async function fetchPageBySlug(slug) {
-  const res = await fetch(`${API_PUBLIC_URL}/pages/${slug}`);
-  if (!res.ok) return null;
+  const res = await fetch(`${PUBLIC_URL}/pages/${slug}`);
+  if (!res.ok) throw await buildError(res, 'Failed to load page content');
+  return res.json();
+}
+
+// ========================
+// PUBLIC API (ORDER TRACKING)
+// ========================
+
+// Looks up a single order from the public reference plus the phone number
+// used when ordering. Returns the order summary and its status timeline.
+export async function trackOrder(orderReference, phoneNumber) {
+  const res = await fetch(`${API_URL}/track`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ order_reference: orderReference, phone_number: phoneNumber }),
+  });
+  if (!res.ok) {
+    throw await buildError(res, 'We could not find an order with those details. Please try again.');
+  }
+  return res.json();
+}
+
+// ========================
+// PUBLIC API (REVIEWS)
+// ========================
+
+// Retrieves approved customer reviews together with the rating summary.
+export async function fetchReviews() {
+  const res = await fetch(`${API_URL}/reviews`);
+  if (!res.ok) throw await buildError(res, 'Failed to fetch reviews');
+  return res.json();
+}
+
+// Sends a new testimonial for moderation. It only appears once approved.
+export async function submitReview(data) {
+  const res = await fetch(`${API_URL}/reviews`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw await buildError(res, 'Could not submit your review. Please try again.');
+  return res.json();
+}
+
+// ========================
+// ADMIN API (REVIEWS)
+// ========================
+
+// Lists every review, approved or pending. Requires login.
+export async function fetchAdminReviews() {
+  const res = await fetch(`${API_URL}/admin/reviews`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw await buildError(res, 'Failed to fetch reviews');
+  return res.json();
+}
+
+// Toggles a review between approved and pending so it publishes or hides it.
+export async function approveReview(id) {
+  const res = await fetch(`${API_URL}/admin/reviews/${id}/approve`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw await buildError(res, 'Failed to update review');
+  return res.json();
+}
+
+// Permanently removes a review. Requires login.
+export async function deleteReview(id) {
+  const res = await fetch(`${API_URL}/admin/reviews/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw await buildError(res, 'Failed to delete review');
   return res.json();
 }

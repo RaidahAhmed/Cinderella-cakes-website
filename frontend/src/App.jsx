@@ -15,10 +15,23 @@ const AdminOrders = lazy(() => import('./pages/admin/Orders'));
 const AdminGallery = lazy(() => import('./pages/admin/Gallery'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 const ContentEditor = lazy(() => import('./pages/admin/ContentEditor'));
+const AdminReviews = lazy(() => import('./pages/admin/Reviews'));
+
+// Public secondary pages are lazy loaded too so they stay out of the home bundle.
+const Track = lazy(() => import('./pages/Track'));
+const Reviews = lazy(() => import('./pages/Reviews'));
 
 function AdminFallback() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'var(--font-body)', color: 'var(--purple-dark)' }}>
+      Loading...
+    </div>
+  );
+}
+
+function PageFallback() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', fontFamily: 'var(--font-body)', color: 'var(--purple-dark)' }}>
       Loading...
     </div>
   );
@@ -35,6 +48,16 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/order" element={<Order />} />
+          <Route path="/track" element={
+            <Suspense fallback={<PageFallback />}>
+              <Track />
+            </Suspense>
+          } />
+          <Route path="/reviews" element={
+            <Suspense fallback={<PageFallback />}>
+              <Reviews />
+            </Suspense>
+          } />
           <Route path="/contact" element={<Contact />} />
         </Route>
         
@@ -53,6 +76,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="gallery" element={<AdminGallery />} />
+          <Route path="reviews" element={<AdminReviews />} />
           <Route path="content" element={<ContentEditor />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
