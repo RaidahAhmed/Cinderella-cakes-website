@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://api.cinderellacakesug.com/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://cinderella-cakes-website-0y6n.onrender.com/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
